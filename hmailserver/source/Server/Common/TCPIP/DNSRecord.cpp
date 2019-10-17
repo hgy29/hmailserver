@@ -2,7 +2,7 @@
 // http://www.hmailserver.com
 
 #include "stdafx.h"
-#include "ClientInfo.h"
+#include "DNSRecord.h"
 
 #ifdef _DEBUG
 #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
@@ -11,17 +11,10 @@
 
 namespace HM
 {
-   ClientInfo::ClientInfo() :
-      port_(0),
-      is_authenticated_(false)
+   DNSRecord::DNSRecord(AnsiString value, int recordType, int preference)
    {
-
+      value_ = value;
+      record_type_ = recordType;
+      preference_ = preference;
    }
-
-   ClientInfo::~ClientInfo()
-   {
-
-   }
-
-
 }

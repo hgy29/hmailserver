@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Mail;
 using System.Text;
 using System.Threading;
 using NUnit.Framework;
@@ -424,6 +425,23 @@ namespace RegressionTests.SMTP
       [Test]
       [Category("SMTP")]
       [Description("Test account max size limitation.")]
+      public void TestMaxSizeLimitation_AnnouncedText()
+      {
+         _settings.MaxMessageSize = 102400;
+
+         // Make sure that no bounce is sent.
+         var smtpClient = new SmtpClientSimulator();
+         smtpClient.Connect();
+         smtpClient.Receive(); // Receive banner
+
+         var ehloResponse = smtpClient.SendAndReceive("EHLO example.com\r\n");
+
+         StringAssert.Contains("250-SIZE 104857600", ehloResponse, ehloResponse);
+      }
+
+      [Test]
+      [Category("SMTP")]
+      [Description("Test account max size limitation.")]
       public void TestMaxSizeLimitationMultipleSmallMessages()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
@@ -720,6 +738,22 @@ namespace RegressionTests.SMTP
 
             Assert.IsTrue(server.MessageData.Contains("Test message"));
          }
+      }
+
+      [Test]
+      [Description("Test send email from internal address to external. When not allowed, error message should state this (and not bring up authentication).")]
+      public void TestSendExternalToExternalNotPermitted_ErrorMessage()
+      {
+         SecurityRange range =
+            SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges.get_ItemByName("My computer");
+         range.AllowDeliveryFromRemoteToRemote = false;
+         range.Save();
+
+         var smtpClientSimulator = new SmtpClientSimulator();
+         var ex  =Assert.Throws<DeliveryFailedException>(() => smtpClientSimulator.Send("test@sdag532sdfagdsa12fsdafdsa1.com",
+            "test2@dummy-example.com", "Mail 1", "Test message"));
+
+         StringAssert.Contains("550 Delivery is not allowed to this address.", ex.Message, ex.Message);
       }
 
       [Test]

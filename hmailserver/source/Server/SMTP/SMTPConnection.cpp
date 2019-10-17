@@ -659,25 +659,6 @@ namespace HM
 
       bool localSender = GetIsLocalSender_();
 
-      bool authenticationRequired = true;
-      if (localSender && localDelivery)
-         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthLocalToLocal();
-      else if (localSender && !localDelivery)
-         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthLocalToExternal();
-      else if (!localSender && localDelivery)
-         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthExternalToLocal();
-      else if (!localSender && !localDelivery)
-         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthExternalToExternal();
-
-      // If the user is local but not authenticated, maybe we should do SMTP authentication.
-      if (authenticationRequired && !isAuthenticated_)
-      {
-         // Authentication is required, but the user hasn't authenticated.
-         SendErrorResponse_(530, "SMTP authentication is required.");
-         AWStats::LogDeliveryFailure(GetIPAddressString(), current_message_->GetFromAddress(), sRecipientAddress, 530);
-         return;
-      }
-
       int iRelayOption = 0;
       if (localSender && localDelivery)
          iRelayOption = SecurityRange::IPRANGE_RELAY_LOCAL_TO_LOCAL;
@@ -698,6 +679,24 @@ namespace HM
          return;
       }
 
+      bool authenticationRequired = true;
+      if (localSender && localDelivery)
+         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthLocalToLocal();
+      else if (localSender && !localDelivery)
+         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthLocalToExternal();
+      else if (!localSender && localDelivery)
+         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthExternalToLocal();
+      else if (!localSender && !localDelivery)
+         authenticationRequired = GetSecurityRange()->GetRequireSMTPAuthExternalToExternal();
+
+      // If the user is local but not authenticated, maybe we should do SMTP authentication.
+      if (authenticationRequired && !isAuthenticated_)
+      {
+         // Authentication is required, but the user hasn't authenticated.
+         SendErrorResponse_(530, "SMTP authentication is required.");
+         AWStats::LogDeliveryFailure(GetIPAddressString(), current_message_->GetFromAddress(), sRecipientAddress, 530);
+         return;
+      }
 
       // Pre-transmission spam protection.
       if (type_ == SPPreTransmission)
@@ -1233,6 +1232,7 @@ namespace HM
          pClientInfo->SetIPAddress(GetIPAddressString());
          pClientInfo->SetPort(GetLocalEndpointPort());
          pClientInfo->SetHELO(helo_host_);
+         pClientInfo->SetIsAuthenticated(isAuthenticated_);
 
          pContainer->AddObject("HMAILSERVER_MESSAGE", current_message_, ScriptObject::OTMessage);
          pContainer->AddObject("HMAILSERVER_CLIENT", pClientInfo, ScriptObject::OTClient);
@@ -1450,7 +1450,7 @@ namespace HM
       // Append size keyword
       {
          String sSizeKeyword;
-         int iMaxSize = smtpconf_->GetMaxMessageSize() * 1000;
+         int iMaxSize = smtpconf_->GetMaxMessageSize() * 1024;
          if (iMaxSize > 0)
             sSizeKeyword.Format(_T("\r\n250-SIZE %d"), iMaxSize);
          else
@@ -1549,6 +1549,51 @@ namespace HM
          return;
       }
 
+      //
+      // Event OnHELO
+      //
+      if (Configuration::Instance()->GetUseScriptServer())
+      {
+         std::shared_ptr<ScriptObjectContainer> pContainer = std::shared_ptr<ScriptObjectContainer>(new ScriptObjectContainer);
+         std::shared_ptr<Result> pResult = std::shared_ptr<Result>(new Result);
+         std::shared_ptr<ClientInfo> pClientInfo = std::shared_ptr<ClientInfo>(new ClientInfo);
+
+         pClientInfo->SetIPAddress(GetIPAddressString());
+         pClientInfo->SetPort(GetLocalEndpointPort());
+         pClientInfo->SetHELO(helo_host_);
+
+         pContainer->AddObject("HMAILSERVER_CLIENT", pClientInfo, ScriptObject::OTClient);
+         pContainer->AddObject("Result", pResult, ScriptObject::OTResult);
+
+         String sEventCaller = "OnHELO(HMAILSERVER_CLIENT)";
+         ScriptServer::Instance()->FireEvent(ScriptServer::EventOnHELO, sEventCaller, pContainer);
+
+         switch (pResult->GetValue())
+         {
+            case 1:
+            {
+               String sErrorMessage = "554 Rejected";
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+            case 2:
+            {
+               String sErrorMessage = "554 " + pResult->GetMessage();
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+            case 3:
+            {
+               String sErrorMessage = "453 " + pResult->GetMessage();
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+         }
+      }
+
       SendEHLOKeywords_();
 
       if (current_state_ == INITIAL)
@@ -1565,6 +1610,51 @@ namespace HM
          // incorrect. Reject.
          SendErrorResponse_(501, "HELO Invalid domain address.");
          return;
+      }
+
+      //
+      // Event OnHELO
+      //
+      if (Configuration::Instance()->GetUseScriptServer())
+      {
+         std::shared_ptr<ScriptObjectContainer> pContainer = std::shared_ptr<ScriptObjectContainer>(new ScriptObjectContainer);
+         std::shared_ptr<Result> pResult = std::shared_ptr<Result>(new Result);
+         std::shared_ptr<ClientInfo> pClientInfo = std::shared_ptr<ClientInfo>(new ClientInfo);
+
+         pClientInfo->SetIPAddress(GetIPAddressString());
+         pClientInfo->SetPort(GetLocalEndpointPort());
+         pClientInfo->SetHELO(helo_host_);
+
+         pContainer->AddObject("HMAILSERVER_CLIENT", pClientInfo, ScriptObject::OTClient);
+         pContainer->AddObject("Result", pResult, ScriptObject::OTResult);
+
+         String sEventCaller = "OnHELO(HMAILSERVER_CLIENT)";
+         ScriptServer::Instance()->FireEvent(ScriptServer::EventOnHELO, sEventCaller, pContainer);
+
+         switch (pResult->GetValue())
+         {
+            case 1:
+            {
+               String sErrorMessage = "554 Rejected";
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+            case 2:
+            {
+               String sErrorMessage = "554 " + pResult->GetMessage();
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+            case 3:
+            {
+               String sErrorMessage = "453 " + pResult->GetMessage();
+               EnqueueWrite_(sErrorMessage);
+               LogAwstatsMessageRejected_();
+               return;
+            }
+         }
       }
 
       EnqueueWrite_("250 Hello.");
@@ -1615,6 +1705,7 @@ namespace HM
          pClientInfo->SetIPAddress(GetIPAddressString());
          pClientInfo->SetPort(GetLocalEndpointPort());
          pClientInfo->SetHELO(helo_host_);
+         pClientInfo->SetIsAuthenticated(isAuthenticated_);
 
          pContainer->AddObject("HMAILSERVER_MESSAGE", current_message_, ScriptObject::OTMessage);
          pContainer->AddObject("HMAILSERVER_CLIENT", pClientInfo, ScriptObject::OTClient);
@@ -1923,6 +2014,7 @@ namespace HM
    {
       AccountLogon accountLogon;
       bool disconnect;
+	  String sUsername = username_;
 
       std::shared_ptr<const Account> pAccount = accountLogon.Logon(GetRemoteEndpointAddress(), username_, password_, disconnect);
          
@@ -1933,12 +2025,29 @@ namespace HM
          EnqueueDisconnect();
          return;
       }
+
+      isAuthenticated_ = pAccount != nullptr;
+
+      if (Configuration::Instance()->GetUseScriptServer())
+      {
+         std::shared_ptr<ScriptObjectContainer> pContainer = std::shared_ptr<ScriptObjectContainer>(new ScriptObjectContainer);
+         std::shared_ptr<ClientInfo> pClientInfo = std::shared_ptr<ClientInfo>(new ClientInfo);
+
+         pClientInfo->SetUsername(sUsername);
+         pClientInfo->SetIPAddress(GetIPAddressString());
+         pClientInfo->SetPort(GetLocalEndpointPort());
+         pClientInfo->SetHELO(helo_host_);
+         pClientInfo->SetIsAuthenticated(isAuthenticated_);
+
+         pContainer->AddObject("HMAILSERVER_CLIENT", pClientInfo, ScriptObject::OTClient);
+
+         String sEventCaller = "OnClientLogon(HMAILSERVER_CLIENT)";
+         ScriptServer::Instance()->FireEvent(ScriptServer::EventOnClientLogon, sEventCaller, pContainer);
+      }
      
       if (pAccount)
       {
          EnqueueWrite_("235 authenticated.");
-
-         isAuthenticated_ = true;
          current_state_ = HEADER;
       }
       else

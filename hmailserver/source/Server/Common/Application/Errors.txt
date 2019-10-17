@@ -1,3 +1,4 @@
+4401, Too many recursions during IP adress lookup. Query: {0}
 5121, PersistentACLPermission::SaveObject, ACL item of type PTAnyone not initialized correctly.
 5122, SQLCEConnection::_UpgradeDatabase(), Failed to create instance of SQL CE Engine.
 5123, SQLCEConnection::_UpgradeDatabase(), Failed to upgrade SQL CE database. HRESULT:
@@ -117,6 +118,7 @@
 5601, _AtlModule.WinMain returned {0}.
 5602, Unable to read install path from HKEY_LOCAL_MACHINE\SOFTWARE\\hMailServer. Using fallback method.
 5603, Unable to enable Diffie-Hellman key agreement. The required file {0} does not exist.
+5604, TCPConnection::AsyncHandshake, Failed to configure OpenSSL SNI. Expected remote host name: {0}.
 5700, Could not delete the directory %s.
 5701, Parsing HTML body with regular expression threw a runtime_error
 5702, A regex match was found, but there were <2 matches in the result
