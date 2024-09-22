@@ -38,112 +38,74 @@ namespace HM
   
    }
 
-   void
-   IMAPFolders::Refresh()
+   void IMAPFolders::Refresh()
    {
-      boost::lock_guard<boost::recursive_mutex> guard(_mutex);
-
-      vecObjects.clear();
-
-      SQLCommand command("select folderid, folderparentid, foldername, folderissubscribed, foldercurrentuid, foldercreationtime from hm_imapfolders "
-                         " where folderaccountid = @FOLDERACCOUNTID order by folderid asc");
-
-      command.AddParameter("@FOLDERACCOUNTID", account_id_);
+       boost::lock_guard<boost::recursive_mutex> guard(_mutex);
    
-      std::shared_ptr<DALRecordset> pRS = Application::Instance()->GetDBManager()->OpenRecordset(command);
-      if (!pRS)
-         return;
-
-      std::vector<std::pair<__int64, std::shared_ptr<IMAPFolder> > > vecIMAPFolders;
-
-      if (!pRS->IsEOF())
-      {
-         __int64 iFolderID = 0;
-         __int64 iParentID = 0;
-         String sFolderName;
-         bool bIsSubscribed = false;   
-         bool bShared = false;
-         unsigned int currentUID = 0;
-         DateTime creationTime;
-
-         while (!pRS->IsEOF())
-         {
-            iFolderID = pRS->GetLongValue("folderid");
-            iParentID = pRS->GetLongValue("folderparentid");
-            sFolderName = pRS->GetStringValue("foldername");
-            bIsSubscribed = (pRS->GetLongValue("folderissubscribed") == 1) ? true : false;
-            currentUID = (unsigned int) pRS->GetInt64Value("foldercurrentuid");
-            creationTime = Time::GetDateFromSystemDate(pRS->GetStringValue("foldercreationtime"));
-
-            // Initialize with dummy parent folder. We can't set it here since it may not
-            // even be loaded from the recordset yet.
-            std::shared_ptr<IMAPFolder> pFolder = std::shared_ptr<IMAPFolder>(new IMAPFolder(account_id_, iParentID));
-            
-            pFolder->SetID(iFolderID);
-            pFolder->SetFolderName(sFolderName);
-            pFolder->SetIsSubscribed(bIsSubscribed);
-            pFolder->SetCurrentUID(currentUID);
-            pFolder->SetCreationTime(creationTime);
-
-            vecIMAPFolders.push_back(std::make_pair(iParentID, pFolder));
-
-            pRS->MoveNext();
-         }
-
-         // Sort theese folders into sub-folders.
-         long lPanicLevel = 0;
-         while (vecIMAPFolders.size() > 0)
-         {
-            auto iterFolder = vecIMAPFolders.begin();
-
-            while (iterFolder != vecIMAPFolders.end())
-            {
-               __int64 iFolderParentID = (*iterFolder).first;
-
-               if (iFolderParentID == (__int64) -1)
+       vecObjects.clear();
+   
+       SQLCommand command("SELECT folderid, folderparentid, foldername, folderissubscribed, "
+                          "foldercurrentuid, foldercreationtime FROM hm_imapfolders "
+                          "WHERE folderaccountid = @FOLDERACCOUNTID ORDER BY folderid ASC");
+   
+       command.AddParameter("@FOLDERACCOUNTID", account_id_);
+   
+       std::shared_ptr<DALRecordset> pRS = Application::Instance()->GetDBManager()->OpenRecordset(command);
+       if (!pRS)
+           return;
+   
+       // Map to store folder ID to folder object
+       std::unordered_map<__int64, std::shared_ptr<IMAPFolder>> folderMap;
+   
+       // First pass: Create folder objects and store them in the map
+       while (!pRS->IsEOF())
+       {
+           __int64 folderID = pRS->GetLongValue("folderid");
+           __int64 parentID = pRS->GetLongValue("folderparentid");
+           String folderName = pRS->GetStringValue("foldername");
+           bool isSubscribed = pRS->GetLongValue("folderissubscribed") == 1;
+           unsigned int currentUID = static_cast<unsigned int>(pRS->GetInt64Value("foldercurrentuid"));
+           DateTime creationTime = Time::GetDateFromSystemDate(pRS->GetStringValue("foldercreationtime"));
+   
+           auto folder = std::make_shared<IMAPFolder>(account_id_, parentID);
+           folder->SetID(folderID);
+           folder->SetFolderName(folderName);
+           folder->SetIsSubscribed(isSubscribed);
+           folder->SetCurrentUID(currentUID);
+           folder->SetCreationTime(creationTime);
+   
+           folderMap[folderID] = folder;
+   
+           pRS->MoveNext();
+       }
+   
+       // Second pass: Build the folder hierarchy
+       for (const auto& [folderID, folder] : folderMap)
+       {
+           __int64 parentID = folder->GetParentID();
+   
+           if (parentID == -1)
+           {
+               // Root folder
+               vecObjects.push_back(folder);
+           }
+           else
+           {
+               auto parentIt = folderMap.find(parentID);
+               if (parentIt != folderMap.end())
                {
-                  vecObjects.push_back((*iterFolder).second);
-                  vecIMAPFolders.erase(iterFolder);
-                  
-                  break; 
+                   // Add to parent's subfolders
+                   parentIt->second->GetSubFolders()->AddItem(folder);
                }
                else
                {
-                  std::shared_ptr<IMAPFolder> pParent = GetItemByDBIDRecursive(iFolderParentID);
-
-                  if (pParent)
-                  {
-                     pParent->GetSubFolders()->AddItem((*iterFolder).second); // found
-                     vecIMAPFolders.erase(iterFolder);
-                     break;
-                  }
+                   // Parent not found, handle error
+                   String errorMessage;
+                   errorMessage.Format(_T("Parent folder with ID %I64d not found for folder ID %I64d"), parentID, folderID);
+                   ErrorManager::Instance()->ReportError(ErrorManager::Medium, 5125, "IMAPFolders::Refresh()", errorMessage);
                }
-
-               iterFolder++;
-            }  
-
-            lPanicLevel++;
-
-            if (lPanicLevel > 100000)
-            {
-               String sMessage;
-			   // NEED FOR IMPROVEMENT: User should be able to adjust max even if INI
-			   // User in forum had too many folders & this limit caused big issues
-			   // 
-			   // Better logging details so people understand what happened until fixed/adjustable
-			   sMessage.Format(_T("Unable to retrieve folder list for account. 100K+ loops trying to sort. Account: %I64d, Parent: %I64d"), account_id_, parent_folder_id_);
-               
-               ErrorManager::Instance()->ReportError(
-                  ErrorManager::Medium, 5125, "IMAPFolders::Refresh()", sMessage);       
-
-               return;
-            }
-
-         }
-
-      
-      }
-
+           }
+       }
    }
 
    std::shared_ptr<IMAPFolder> 
@@ -299,31 +261,23 @@ namespace HM
       return true;
    }
 
-
-   std::shared_ptr<IMAPFolder> 
-   IMAPFolders::GetItemByDBIDRecursive(__int64 lFolderID)
+   std::shared_ptr<IMAPFolder>
+   IMAPFolders::GetItemByDBIDRecursive(__int64 folderID)
    {
-      boost::lock_guard<boost::recursive_mutex> guard(_mutex);
-
-      auto iterCurPos = vecObjects.begin();
-
-      for(std::shared_ptr<IMAPFolder> pFolder : vecObjects)
-      {
-         if (pFolder->GetID() == lFolderID)
-            return pFolder;
-
-         // Visit this folder.
-         std::shared_ptr<IMAPFolders> pSubFolders = pFolder->GetSubFolders();
-         pFolder = pSubFolders->GetItemByDBIDRecursive(lFolderID);
-
-         if (pFolder)
-            return pFolder;
-      }
-
-
+       boost::lock_guard<boost::recursive_mutex> guard(_mutex);
+   
+       for (const auto& folder : vecObjects)
+       {
+           if (folder->GetID() == folderID)
+               return folder;
+   
+           auto foundFolder = folder->GetSubFolders()->GetItemByDBIDRecursive(folderID);
+           if (foundFolder)
+               return foundFolder;
+       }
+   
       std::shared_ptr<IMAPFolder> pEmpty;
       return pEmpty;
-
    }
 
    __int64 
