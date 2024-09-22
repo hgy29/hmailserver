@@ -79,3 +79,68 @@ STDMETHODIMP InterfaceClient::get_Authenticated(VARIANT_BOOL *pVal)
       return COMError::GenerateGenericMessage();
    }
 }
+
+STDMETHODIMP InterfaceClient::get_EncryptedConnection(VARIANT_BOOL* pVal)
+{
+   try
+   {
+      *pVal = client_info_->GetIsEncryptedConnection() ? VARIANT_TRUE : VARIANT_FALSE;
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceClient::get_CipherVersion(BSTR* pVal)
+{
+   try
+   {
+      *pVal = client_info_->GetCipherVersion().AllocSysString();
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceClient::get_CipherName(BSTR* pVal)
+{
+   try
+   {
+      *pVal = client_info_->GetCipherName().AllocSysString();
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceClient::get_CipherBits(long* pVal)
+{
+   try
+   {
+      *pVal = client_info_->GetCipherBits();
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceClient::get_SessionID(long* pVal)
+{
+   try
+   {
+      *pVal = client_info_->GetSessionID();
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}

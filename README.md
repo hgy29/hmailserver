@@ -15,34 +15,32 @@ Branches
 
    * The master branch contains the latest development version of hMailServer. This version is typically not yet released for production usage. If you want to add new features to hMailServer, use this branch.
    
-   * The x.y.z (for exampel 5.6.2) contains the code for the version with the same name as the branch. For example, branch 5.6.1 contains hMailServer version 5.6.1. These branches are typically only used for bugfixes or minor features.
+   * The x.y.z (for example 5.6.2) contains the code for the version with the same name as the branch. For example, branch 5.6.1 contains hMailServer version 5.6.1. These branches are typically only used for bugfixes or minor features.
 
 Environment set up
 ---------------------
 
-Required software:
+**Required software**
 
    * An installed version of hMailServer 5.7 (configured with a database)
-   * Visual Studio 2013 Update 3
-   * InnoSetup (to build installation program)
+   * Visual Studio 2019 Community edition
+   * InnoSetup 5.5.4a (non-unicode version)
    * [Perl ActiveState ActivePerl Community Edition 32 bit works fine](https://www.activestate.com/activeperl/downloads)
    
 **NOTE**
 
 You should not be compiling hMailServer on a computer which already runs a production version of hMailServer. When compiling hMailServer, the compilation will stop any already running version of hMailServer, and will register the compiled version as the hMailServer version on the machine (configuring the Windows service). This means that if you are running a production version of hMailServer on the machine, this version will stop running if you compile hMailServer. If this happens, the easiest path is to reinstall the production version.
 
-Configuring Visual Studio 2013 Express Edition
+Installing Visual Studio 2019 Community edition
 ----------------------------------------------
 
-These steps are only required if you are using Visual Studio 2013 Express Edition. The steps are required because Express Edition does not include Active Template Library which hMailServer relies on. ATL therefore needs to be installed separately:
-
-1. Download the (Windows Driver Kit 7.1 ISO)(http://www.microsoft.com/download/en/details.aspx?id=11800)
-2. Mount the ISO and run the installation. You only need to install "Build Environments"
-4. Open the solution hmailserver\source\Server\hMailServer\hMailServer.sln
-5. In the Solution Explorer, right click on hMailServer and select Properties
-6. Select Configuraton Properties -> VC++ Directories
-7. Add "{PATH-TO-WDK}\inc\atl71;" to the list of Include Directories. (Replace {PATH-TO-WDK} with the location whre you installed it.
-8. Add "{PATH-TO-WDK\lib\ATL\i386" to the list of Library Directories.  (Replace {PATH-TO-WDK} with the location whre you installed it.
+1. Download [Visual Studio 2019](https://visualstudio.microsoft.com/vs/) and launch the installation.
+2. Select the following _Workloads_
+  * .NET desktop development
+  * Desktop development with C++
+3. Select the following _Individual components_
+  * C++ ATL for latest v142 build tools (x86 & x64)
+  * Windows 10 SDK (10.0.18362.0)
 
 3rd party libraries
 -------------------
@@ -55,36 +53,35 @@ Building OpenSSL
 ----------------
 1. Download OpenSSL 1.1.1* from http://www.openssl.org/source/ and put it into %hMailServerLibs%\<OpenSSL-Version>.
    You should now have a folder named %hMailServerLibs%\<OpenSSL-version>, for example C:\Dev\hMailLibs\openssl-1.1.1s
-2. Start a VS2013 x64 Native Tools Command Prompt
+2. Start a x64 Native Tools Command Prompt for VS2019.
 3. Change dir to %hMailServerLibs%\<OpenSSL-version>.
 3. Run the following commands:
 
    <pre>
-   nmake clean
-   Perl Configure no-asm VC-WIN64A --prefix=%cd%\out64 --openssldir=%cd%\out64 -D_WIN32_WINNT=0x501
+   Perl Configure no-asm VC-WIN64A --prefix=%cd%\out64 --openssldir=%cd%\out64 -D_WIN32_WINNT=0x600
+   nmake clean   
    nmake install_sw
    </pre>
 
 Building Boost
 --------------
-1. Download Boost 1.70.0 from http://www.boost.org/ and put it into %hMailServerLibs%\<Boost-Version>.  
-   You should now have a folder named %hMailServerLibs%\<Boost-Version>, for example C:\Dev\hMailLibs\boost_1_63_0
-2. Start a VS2013 x64 Native Tools Command Prompt
+1. Download Boost 1.72.0 from http://www.boost.org/ and put it into %hMailServerLibs%\<Boost-Version>.  
+   You should now have a folder named %hMailServerLibs%\<Boost-Version>, for example C:\Dev\hMailLibs\boost_1_72_0
+2. Start a x64 Native Tools Command Prompt for VS2019.
 3. Change dir to %hMailServerLibs%\<Boost-Version>.
 4. Run the following commands:
  
    NOTE: Change the -j parameter from 4 to the number of cores on your computer. The parameter specifies the number of parallel compilations will be done.
 
    <pre>
-   bootstrap.bat vc12
-   bjam.exe --toolset=msvc-12.0 --build-type=complete address-model=64 --build-dir=out64 -j 4
+   bootstrap
+   b2 debug release threading=multi --build-type=complete --toolset=msvc address-model=64 stage --build-dir=out64 -j 4
    </pre>
-
 
 Building hMailServer
 --------------------
 
-Visual Studio 2013 must be started with Run as Administrator.
+Visual Studio 2019 must be started with _Run as Administrator_.
 
 1. Download the source code from this Git repository.
 2. Compile the solution hmailserver\source\Server\hMailServer\hMailServer.sln.
@@ -98,6 +95,21 @@ Running in Debug
 ----------------
 
 If you want to run hMailServer in debug mode in Visual Studio, add the command argument /debug. You find this setting in the Project properties, under Configuration Properties -> Debugging.
+
+Running tests
+-------------
+
+hMailServer source code contains a number of automated tests which excercises the basic functionality. When adding new features or fixing bugs, corresponding tests should be added. hMailServer tests are implemented using NUnit. To run them in Visual Studio, follow these steps:
+
+NOTE: When running tests, your local hMailServer installation will be updated with test accounts. Existing domains and accounts are deleted. Each tests prepares the server configuration in different ways. In other words, do not run the automated tests in an environment where you need to preserve hMailServer data.
+
+1. Make sure hMailServer.exe is built and can be run. The tests will launch the service.
+2. Open the test solution, `\hmailserver\test\hMailServer Tests.sln`
+3. In Visual Studio, select Test Explorer from the View-menu. 
+4. Locate a test to run under "RegressionTests"
+5. Right-click on a test or test category and select "Run".
+
+You can also navigate to the source code for a test, right-click anywhere and select "Run Test(s)" to run it.
 
 Releasing hMailServer
 =====================

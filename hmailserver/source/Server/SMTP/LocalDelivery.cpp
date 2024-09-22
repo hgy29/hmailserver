@@ -8,7 +8,6 @@
 #include "../common/Application/ObjectCache.h"
 
 #include "../common/BO/Account.h"
-#include "../common/BO/Domain.h"
 #include "../common/BO/Message.h"
 #include "../common/BO/MessageRecipient.h"
 #include "../common/BO/MessageRecipients.h"
@@ -27,7 +26,6 @@
 #include "../common/Util/TraceHeaderWriter.h"
 #include "../common/Util/MessageUtilities.h"
 
-#include "../IMAP/IMAPFolderContainer.h"
 #include "../IMAP/MessagesContainer.h"
 
 #include "SMTPConfiguration.h"
@@ -156,6 +154,8 @@ namespace HM
       // not add any rows to the database in this scenario. To ensure this, InterfaceMessage checks the
       // message state. If it's "Delivering", it won't save the changes to the database.
       accountLevelMessage->SetState(Message::Delivered); 
+      // Recalculate filesize after Return-Path and optionally Delivered-To header(s) are added
+      accountLevelMessage->SetSize(FileUtilities::FileSize(PersistentMessage::GetFileName(account, accountLevelMessage)));
 
       PersistentMessage::SaveObject(accountLevelMessage);
 

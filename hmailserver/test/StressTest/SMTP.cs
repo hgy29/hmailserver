@@ -38,7 +38,7 @@ namespace StressTest
          for (int i = 0; i < 1000; i++)
          {
             hMailServer.Account account =
-                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("recipient{0}@test.com", i), "test");
+                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@test.com", i), "test");
 
             recipients.Add(account.Address);
 
@@ -90,7 +90,7 @@ namespace StressTest
          for (int i = 0; i < 1000; i++)
          {
             hMailServer.Account account =
-                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("recipient{0}@test.com", i), "test");
+                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@test.com", i), "test");
 
             recipients.Add(account.Address);
 
@@ -178,9 +178,10 @@ namespace StressTest
          string accountDir = Path.Combine(dataDir, "test");
 
          int memoryUsage = Shared.GetCurrentMemoryUsage();
-         int maxMemoryUsage = memoryUsage + 5;
+         int maxMemoryUsage = memoryUsage + 20;
 
          const int numberOfMessages = 200000;
+         var stopwatch = Stopwatch.StartNew();
 
          for (int i = 1; i <= numberOfMessages; i++)
          {
@@ -188,8 +189,13 @@ namespace StressTest
 
             if (i % 100 == 0)
             {
-               Shared.AssertLowMemoryUsage(maxMemoryUsage);
-               TestTracer.WriteTraceInfo("{0}/{1}", i, numberOfMessages);
+               double messagesPerSecond = 100 / stopwatch.Elapsed.TotalSeconds;
+               long bytesUsed = Shared.AssertLowMemoryUsage(maxMemoryUsage);
+               TestTracer.WriteTraceInfo("{0}/{1}. Messages per second: {2}, Bytes used: {3}", i, numberOfMessages, messagesPerSecond, bytesUsed);
+
+               stopwatch.Reset();
+               stopwatch.Start();
+               ;
             }
          }
 

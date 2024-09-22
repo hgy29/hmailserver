@@ -446,9 +446,10 @@ create table hm_fetchaccounts
 	faprocessmimerecipients tinyint not null,
 	faprocessmimedate tinyint not null,
 	faconnectionsecurity tinyint not null,
-   fauseantispam tinyint not null,
-   fauseantivirus tinyint not null,
-   faenablerouterecipients tinyint not null
+	fauseantispam tinyint not null,
+	fauseantivirus tinyint not null,
+	faenablerouterecipients tinyint not null,
+	famimerecipientheaders nvarchar(255) not null DEFAULT 'To,CC,X-RCPT-TO,X-Envelope-To'
 ) 
 
 ALTER TABLE hm_fetchaccounts ADD CONSTRAINT hm_fetchaccounts_pk PRIMARY KEY NONCLUSTERED (faid) 
@@ -943,6 +944,12 @@ insert into hm_settings (settingname, settingstring, settinginteger) values ('En
 
 insert into hm_settings (settingname, settingstring, settinginteger) values ('EnableImapSASLInitialResponse', '', 0)
 
+insert into hm_settings (settingname, settingstring, settinginteger) values ('ascheckptr', '', 0)
+
+insert into hm_settings (settingname, settingstring, settinginteger) values ('ascheckptrscore', '', 1)
+
+insert into hm_settings (settingname, settingstring, settinginteger) values ('IPv6Preferred', '', 0)
+
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 25, 0, NULL, 0, 0) 
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 587, 0, NULL, 0, 0) 
@@ -951,7 +958,4 @@ insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2,
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (5, 143, 0, NULL, 0, 0) 
 
-insert into hm_dbversion values (5700)
-
-
-
+insert into hm_dbversion values (5704)

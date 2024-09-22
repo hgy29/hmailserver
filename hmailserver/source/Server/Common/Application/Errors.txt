@@ -1,4 +1,6 @@
-4401, Too many recursions during IP adress lookup. Query: {0}
+4401, Too many recursions during IP address lookup. Query: {0}
+4402, Too many recursions during TXT record lookup. Query: {0}
+4403, Too many recursions during MX record lookup. Query: {0}
 5121, PersistentACLPermission::SaveObject, ACL item of type PTAnyone not initialized correctly.
 5122, SQLCEConnection::_UpgradeDatabase(), Failed to create instance of SQL CE Engine.
 5123, SQLCEConnection::_UpgradeDatabase(), Failed to upgrade SQL CE database. HRESULT:
@@ -46,7 +48,7 @@
 5305, DKIMSigner::Sign, Either the selector or private key file was not specified.
 5306, DKIMSigner::Sign, Message signing using DKIM failed.
 5307, DKIM::Sign, Creation of canonicalization method failed.
-5308, DKIM::Sign, Failed to create siganture.
+5308, DKIM::Sign, Failed to create signature.
 5309, DKIM::_SignHash, Unable to read the private key file into memory.
 5310, DKIM::_SignHash, Unable to parse the private key file.
 5311, DKIM::_SignHash, Call to EVP_SignFinal failed.

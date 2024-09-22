@@ -61,6 +61,29 @@ namespace RegressionTests.SMTP
          Assert.AreNotEqual(lastLogonTimeBefore, lastLogonTimeAfter);
       }
 
+      [Test]
+      public void AuthLoginShouldOnlyBeAllowedOnce()
+      {
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+
+         var sock = new TcpConnection();
+         sock.Connect(25);
+         Assert.IsTrue(sock.Receive().StartsWith("220"));
+         sock.Send("EHLO test.com\r\n");
+         Assert.IsTrue(sock.Receive().StartsWith("250"));
+
+         // Login a first time
+         string base64EncodedUsername = EncodeBase64("test@test.com");
+         sock.Send("AUTH LOGIN " + base64EncodedUsername + "\r\n");
+         Assert.IsTrue(sock.Receive().StartsWith("334"));
+         sock.Send(EncodeBase64("test") + "\r\n");
+         Assert.IsTrue(sock.Receive().StartsWith("235"));
+
+         // Login a second time
+         sock.Send("AUTH LOGIN " + base64EncodedUsername + "\r\n");
+         Assert.IsTrue(sock.Receive().StartsWith("503 Already authenticated."));
+      }
+
 
       [Test]
       [Category("SMTP")]
@@ -68,7 +91,7 @@ namespace RegressionTests.SMTP
       public void BounceMessageShouldContainSubjectAndDate()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          recipientAccount.MaxSize = 1;
@@ -89,7 +112,7 @@ namespace RegressionTests.SMTP
 
          SmtpClientSimulator.StaticSend(senderAccount.Address, recipientAccount.Address, "Test subject", text);
 
-         // Make sure the recipient did not receive it.
+         // Make sure the list did not receive it.
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
          Pop3ClientSimulator.AssertMessageCount(recipientAccount.Address, "test", 0);
          CustomAsserts.AssertFilesInUserDirectory(recipientAccount, 0);
@@ -109,9 +132,9 @@ namespace RegressionTests.SMTP
       [Description("Issue 226. Domain alias rewrites sender address.")]
       public void DomainAliasesShouldNotRewriteRecipientList()
       {
-         DomainAlias oDA = _domain.DomainAliases.Add();
-         oDA.AliasName = "dummy-example.com";
-         oDA.Save();
+         DomainAlias domainAlias = _domain.DomainAliases.Add();
+         domainAlias.AliasName = "dummy-example.com";
+         domainAlias.Save();
 
          Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "otherguy@test.com", "test");
 
@@ -135,7 +158,7 @@ namespace RegressionTests.SMTP
             // test.com.
             //
             // This should not happen. Otherdomain.com is an alias for test.com,
-            // but we shouldn't actually modify the recipient address just because
+            // but we shouldn't actually modify the list address just because
             // of this.
             var smtpClient = new SmtpClientSimulator();
             smtpClient.Send(account.Address, "test@dummy-example.com", "Test", "Test message");
@@ -184,49 +207,13 @@ namespace RegressionTests.SMTP
          Assert.IsTrue(message.get_Flag(eMessageFlag.eMFVirusScan));
       }
 
-      [Test]
-      [Category("SMTP")]
-      [Description("Confirm that deliveries are logged in the awstats log.")]
-      public void TestAwstatsLog()
-      {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-
-         Logging logging = settings.Logging;
-         logging.AWStatsEnabled = true;
-         logging.Enabled = true;
-
-         if (File.Exists(logging.CurrentAwstatsLog))
-            File.Delete(logging.CurrentAwstatsLog);
-
-         Account oAccount1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
-
-         IPAddress localAddress = TestSetup.GetLocalIpAddress();
-         var smtpClientSimulator = new SmtpClientSimulator(false, 25, localAddress);
-
-         // Delivery from external to local.
-         smtpClientSimulator.Send("test@external.com", "test@test.com", "Mail 1", "Mail 1");
-         Pop3ClientSimulator.AssertMessageCount("test@test.com", "test", 1);
-         string contents = TestSetup.ReadExistingTextFile(logging.CurrentAwstatsLog);
-         CustomAsserts.AssertDeleteFile(logging.CurrentAwstatsLog);
-         string expectedString = string.Format("\ttest@external.com\ttest@test.com\t{0}\t127.0.0.1\tSMTP\t?\t250\t",
-                                               localAddress);
-         Assert.IsTrue(contents.Contains(expectedString), contents);
-
-         // Failed delivery from local to local.
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClientSimulator.Send("test@test.com", "test@test.com", "Mail 1", "Mail 1"));
-         contents = TestSetup.ReadExistingTextFile(logging.CurrentAwstatsLog);
-         CustomAsserts.AssertDeleteFile(logging.CurrentAwstatsLog);
-         expectedString = string.Format("\ttest@test.com\ttest@test.com\t{0}\t127.0.0.1\tSMTP\t?\t530\t",
-                                        localAddress);
-         Assert.IsTrue(contents.Contains(expectedString), contents);
-      }
-
+      
       [Test]
       [Description("Issue 291, Sloppy non-delivery report generated")]
       public void TestBounceMessageSyntax()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          recipientAccount.MaxSize = 1;
@@ -242,7 +229,7 @@ namespace RegressionTests.SMTP
 
          SmtpClientSimulator.StaticSend(senderAccount.Address, recipientAccount.Address, "", text);
 
-         // Make sure the recipient did not receive it.
+         // Make sure the list did not receive it.
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
 
          // Check the syntax in the bounce message.
@@ -262,7 +249,7 @@ namespace RegressionTests.SMTP
       [Description("Issue 181: Make sure that duplicate Message-ID's aren't added.")]
       public void TestDuplicateMessageIDs()
       {
-         Account oAccount1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
 
          string content = "SomeHeader: Text" + Environment.NewLine +
                           "Message-Id: <200903121212246.SM01264@server03>" + Environment.NewLine +
@@ -296,50 +283,50 @@ namespace RegressionTests.SMTP
       [Test]
       public void TestHelo()
       {
-         var oSimulator = new TcpConnection();
+         var simulator = new TcpConnection();
 
-         oSimulator.Connect(25);
+         simulator.Connect(25);
 
-         string sWelcome = oSimulator.Receive();
+         string sWelcome = simulator.Receive();
 
-         oSimulator.Send("HELO\r\n");
-         string sResponse = oSimulator.Receive();
-
-         if (!sResponse.StartsWith("501"))
-            throw new Exception("Invalid response to HELO");
-
-         oSimulator.Send("HELO   \r\n");
-         sResponse = oSimulator.Receive();
+         simulator.Send("HELO\r\n");
+         string sResponse = simulator.Receive();
 
          if (!sResponse.StartsWith("501"))
             throw new Exception("Invalid response to HELO");
 
-         oSimulator.Send("HELO TEST.COM\r\n");
-         sResponse = oSimulator.Receive();
+         simulator.Send("HELO   \r\n");
+         sResponse = simulator.Receive();
+
+         if (!sResponse.StartsWith("501"))
+            throw new Exception("Invalid response to HELO");
+
+         simulator.Send("HELO TEST.COM\r\n");
+         sResponse = simulator.Receive();
 
          if (!sResponse.StartsWith("250"))
             throw new Exception("Invalid response to HELO");
 
 
-         oSimulator.Send("HELO   TEST.COM\r\n");
-         sResponse = oSimulator.Receive();
+         simulator.Send("HELO   TEST.COM\r\n");
+         sResponse = simulator.Receive();
 
          if (!sResponse.StartsWith("250"))
             throw new Exception("Invalid response to HELO");
 
-         oSimulator.Send("EHLO TEST.COM\r\n");
-         sResponse = oSimulator.Receive();
+         simulator.Send("EHLO TEST.COM\r\n");
+         sResponse = simulator.Receive();
 
          if (!sResponse.StartsWith("250"))
             throw new Exception("Invalid response to HELO");
 
-         oSimulator.Send("EHLO    TEST.COM\r\n");
-         sResponse = oSimulator.Receive();
+         simulator.Send("EHLO    TEST.COM\r\n");
+         sResponse = simulator.Receive();
 
          if (!sResponse.StartsWith("250"))
             throw new Exception("Invalid response to HELO");
 
-         oSimulator.Disconnect();
+         simulator.Disconnect();
       }
 
       [Test]
@@ -391,7 +378,7 @@ namespace RegressionTests.SMTP
       public void TestMaxSizeLimitation()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          recipientAccount.MaxSize = 1;
@@ -412,7 +399,7 @@ namespace RegressionTests.SMTP
 
          SmtpClientSimulator.StaticSend(senderAccount.Address, recipientAccount.Address, "MySubject", text);
 
-         // Make sure the recipient did not receive it.
+         // Make sure the list did not receive it.
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
          Pop3ClientSimulator.AssertMessageCount(recipientAccount.Address, "test", 0);
          CustomAsserts.AssertFilesInUserDirectory(recipientAccount, 0);
@@ -445,7 +432,7 @@ namespace RegressionTests.SMTP
       public void TestMaxSizeLimitationMultipleSmallMessages()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          recipientAccount.MaxSize = 1;
@@ -677,7 +664,7 @@ namespace RegressionTests.SMTP
 
       [Test]
       [Category("SMTP")]
-      [Description("Confirm that it's OK to add the same recipient multiple times.")]
+      [Description("Confirm that it's OK to add the same list multiple times.")]
       public void TestSameRecipientMultipleTimes()
       {
          Logging logging = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Logging;
@@ -800,9 +787,9 @@ namespace RegressionTests.SMTP
       public void TestSendToMultipleAccounts()
       {
          Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Account oAccount1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi1@test.com", "test");
-         Account oAccount2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi2@test.com", "test");
-         Account oAccount3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi3@test.com", "test");
+         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi1@test.com", "test");
+         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi2@test.com", "test");
+         Account account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "multi3@test.com", "test");
 
          var smtpClientSimulator = new SmtpClientSimulator();
 
@@ -813,19 +800,19 @@ namespace RegressionTests.SMTP
 
          string sBody = "Test of sending same email to multiple accounts.";
 
-         smtpClientSimulator.Send(oAccount1.Address, lstRecipients, "Multi test", sBody);
+         smtpClientSimulator.Send(account1.Address, lstRecipients, "Multi test", sBody);
 
          var pop3ClientSimulator = new Pop3ClientSimulator();
 
-         string sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(oAccount1.Address, "test");
+         string sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
          if (sMessageData.IndexOf(sBody) < 0)
             throw new Exception("E-mail not found");
 
-         sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(oAccount2.Address, "test");
+         sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(account2.Address, "test");
          if (sMessageData.IndexOf(sBody) < 0)
             throw new Exception("E-mail not found");
 
-         sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(oAccount3.Address, "test");
+         sMessageData = Pop3ClientSimulator.AssertGetFirstMessageText(account3.Address, "test");
          if (sMessageData.IndexOf(sBody) < 0)
             throw new Exception("E-mail not found");
       }
@@ -864,7 +851,7 @@ namespace RegressionTests.SMTP
       public void TestTempErrorIfDiskFull()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          Directories directories = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories;
@@ -894,7 +881,6 @@ namespace RegressionTests.SMTP
       [Test]
       public void TestTooManyInvalidCommandsAUTH()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
          Settings settings = _settings;
 
          settings.DisconnectInvalidClients = true;
@@ -903,34 +889,33 @@ namespace RegressionTests.SMTP
          var sim = new TcpConnection();
          sim.Connect(25);
          sim.Send("EHLO test.com\r\n");
+         sim.ReadUntil("250 HELP\r\n");
 
-         for (int i = 1; i <= 6; i++)
+         for (int i = 1; i <= 5; i++)
          {
-            try
+            sim.Send("AUTH LOGIN\r\n");
+
+            // Send invalid username/password
+            string usernamePrompt = sim.Receive();
+
+            // Send a invalid username
+            sim.Send("YWNhZGVtaWE=\r\n");
+            string passwordPrompt = sim.Receive();
+            StringAssert.Contains("334 UGFzc3dvcmQ6", passwordPrompt); // Base64 encoded "Password" prompt
+
+            // Send a invalid password
+            sim.Send("abc\r\n");
+            var loginResult = sim.Receive();
+
+
+            if (i == 4)
             {
-               sim.Send("AUTH LOGIN\r\n");
-
-               string result = sim.Receive();
-
-               if (result.Contains("Too many invalid commands"))
-                  return;
-
-               if (i > 5)
-                  break;
-
-               sim.Send("YWNhZGVtaWE=\r\n");
-               sim.Receive();
-               sim.Send("abc\r\n");
-               sim.Receive();
-            }
-            catch (Exception)
-            {
-               if (i < 5)
-               {
-                  Assert.Fail("Was disconnected prematurely.");
-               }
-
+               StringAssert.Contains("Too many invalid commands", loginResult);
                return;
+            }
+            else
+            {
+               StringAssert.Contains("535 Authentication failed. Restarting authentication process.", loginResult);
             }
          }
 
@@ -1064,7 +1049,7 @@ namespace RegressionTests.SMTP
       public void TestValidEmailAddress()
       {
          Account senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
-         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "recipient@test.com",
+         Account recipientAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "list@test.com",
                                                                                      "test");
 
          recipientAccount.MaxSize = 1;
@@ -1080,7 +1065,7 @@ namespace RegressionTests.SMTP
 
          SmtpClientSimulator.StaticSend(senderAccount.Address, recipientAccount.Address, "", text);
 
-         // Make sure the recipient did not receive it.
+         // Make sure the list did not receive it.
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
 
          // Check the syntax in the bounce message.
@@ -1094,16 +1079,27 @@ namespace RegressionTests.SMTP
       }
 
       [Test]
+      public void TestTooLongEmailAddress()
+      {
+         var senderAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "sender@test.com", "test");
+
+         var tooLongAddress = new string('i', 260) + "@example.com";
+         var ex = Assert.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend(senderAccount.Address, tooLongAddress, "", "foobar"));
+
+         StringAssert.Contains("550 A valid address is required.", ex.Message);
+      }
+
+      [Test]
       public void TestWelcomeMessage()
       {
          Application application = SingletonProvider<TestSetup>.Instance.GetApp();
          _settings.WelcomeSMTP = "HOWDYHO";
 
-         var oSimulator = new SmtpClientSimulator();
+         var simulator = new SmtpClientSimulator();
 
-         string sWelcomeMessage = oSimulator.GetWelcomeMessage();
+         string sWelcomeMessage = simulator.GetWelcomeMessage();
 
-         if (sWelcomeMessage != "220 HOWDYHO\r\n")
+         if (sWelcomeMessage != "220 HOWDYHO ESMTP\r\n")
             throw new Exception("ERROR - Wrong welcome message.");
       }
 

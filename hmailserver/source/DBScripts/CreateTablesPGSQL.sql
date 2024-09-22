@@ -327,7 +327,8 @@ create table hm_fetchaccounts
 	faconnectionsecurity smallint not null,
     fauseantispam smallint not null,
     fauseantivirus smallint not null,
-    faenablerouterecipients smallint not null
+    faenablerouterecipients smallint not null,
+	famimerecipientheaders varchar(255) not null DEFAULT 'To,CC,X-RCPT-TO,X-Envelope-To'
 );
 
 create table hm_fetchaccounts_uids
@@ -784,6 +785,12 @@ insert into hm_settings (settingname, settingstring, settinginteger) values ('En
 
 insert into hm_settings (settingname, settingstring, settinginteger) values ('EnableImapSASLInitialResponse', '', 0);
 
+insert into hm_settings (settingname, settingstring, settinginteger) values ('ascheckptr', '', 0);
+
+insert into hm_settings (settingname, settingstring, settinginteger) values ('ascheckptrscore', '', 1);
+
+insert into hm_settings (settingname, settingstring, settinginteger) values ('IPv6Preferred', '', 0);
+
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 25, 0, NULL, 0, 0);
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 587, 0, NULL, 0, 0);
@@ -792,4 +799,4 @@ insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2,
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (5, 143, 0, NULL, 0, 0);
 
-insert into hm_dbversion values (5700);
+insert into hm_dbversion values (5704);
