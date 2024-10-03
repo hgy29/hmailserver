@@ -8,6 +8,7 @@
 
 #include "../Util/Time.h"
 #include "../../IMAP/IMAPConfiguration.h"
+#include <unordered_map>
 
 #ifdef _DEBUG
 #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
@@ -80,9 +81,11 @@ namespace HM
        }
    
        // Second pass: Build the folder hierarchy
-       for (const auto& [folderID, folder] : folderMap)
+       for (const auto& it : folderMap)
        {
-           __int64 parentID = folder->GetParentID();
+          auto &folderID = it.first;
+          auto& folder = it.second;
+           __int64 parentID = folder->GetParentFolderID();
    
            if (parentID == -1)
            {

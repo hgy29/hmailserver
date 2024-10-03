@@ -19,14 +19,14 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <UseOfAtl>Static</UseOfAtl>
     <CharacterSet>MultiByte</CharacterSet>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <UseOfAtl>Static</UseOfAtl>
     <CharacterSet>MultiByte</CharacterSet>
     <CLRSupport>false</CLRSupport>
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
@@ -73,7 +73,7 @@ EXIT 0
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(hMailServerLibs)\boost_1_72_0;..\..\..\..\Libraries\mssqlce3.5;$(hMailServerLibs)\openssl-1.1.1u\out64\include;..\..\..\..\Libraries\libpq-12.2;$(BOOST_INCLUDE_PATH);$(OPENSSL_INCLUDE_PATH);$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(hMailServerLibs)\boost_1_86_0;..\..\..\..\Libraries\mssqlce3.5;$(hMailServerLibs)\openssl-3.3.2\out64\include;..\..\..\..\Libraries\libpq-12.2;$(BOOST_INCLUDE_PATH);$(OPENSSL_INCLUDE_PATH);$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;UNICODE;_UNICODE;BOOST_DATE_TIME_NO_LIB;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>Async</ExceptionHandling>
@@ -95,7 +95,7 @@ EXIT 0
       <AdditionalDependencies>Adsiid.lib;activeds.lib;IPHlpAPI.lib;Dnsapi.lib;Ws2_32.lib;libpq.lib;libcrypto.lib;libssl.lib;crypt32.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>NotSet</ShowProgress>
       <OutputFile>$(OutDir)hMailServer.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(hMailServerLibs)\boost_1_72_0\stage\lib;$(hMailServerLibs)\openssl-1.1.1u\out64\lib;..\..\..\..\Libraries\libpq-12.2\x64;$(BOOST_LIBS_PATH);$(OPENSSL_LIBS_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(hMailServerLibs)\boost_1_86_0\stage\lib;$(hMailServerLibs)\openssl-3.3.2\out64\lib;..\..\..\..\Libraries\libpq-12.2\x64;$(BOOST_LIBS_PATH);$(OPENSSL_LIBS_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AssemblyDebug>true</AssemblyDebug>
@@ -105,8 +105,8 @@ EXIT 0
     </Link>
     <PostBuildEvent>
       <Message>Performing registration</Message>
-      <Command>xcopy /F /Y $(hMailServerLibs)\openssl-1.1.1u\out64\bin\libcrypto-1_1-x64.dll $(OutDir)
-xcopy /F /Y $(hMailServerLibs)\openssl-1.1.1u\out64\bin\libssl-1_1-x64.dll $(OutDir)
+      <Command>xcopy /F /Y $(hMailServerLibs)\openssl-3.3.2\out64\bin\libcrypto-3-x64.dll $(OutDir)
+xcopy /F /Y $(hMailServerLibs)\openssl-3.3.2\out64\bin\libssl-3-x64.dll $(OutDir)
 xcopy /F /Y $(ProjectDir)..\..\..\..\libraries\libpq-12.2\x64\*.dll $(OutDir)
 "$(TargetPath)" /Register
 </Command>
@@ -130,7 +130,7 @@ EXIT 0
       <ProxyFileName>hMailServer_p.c</ProxyFileName>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(hMailServerLibs)\boost_1_72_0;..\..\..\..\Libraries\mssqlce3.5;$(hMailServerLibs)\openssl-1.1.1u\out64\include;..\..\..\..\Libraries\libpq-12.2;$(BOOST_INCLUDE_PATH);$(OPENSSL_INCLUDE_PATH);$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(hMailServerLibs)\boost_1_86_0;..\..\..\..\Libraries\mssqlce3.5;$(hMailServerLibs)\openssl-3.3.2\out64\include;..\..\..\..\Libraries\libpq-12.2;$(BOOST_INCLUDE_PATH);$(OPENSSL_INCLUDE_PATH);$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_WINDOWS;UNICODE;_UNICODE;NDEBUG;BOOST_DATE_TIME_NO_LIB;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -149,18 +149,19 @@ EXIT 0
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;Adsiid.lib;activeds.lib;IPHlpAPI.lib;Dnsapi.lib;Ws2_32.lib;libpq.lib;crypt32.lib;Secur32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)hMailServer.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(hMailServerLibs)\boost_1_72_0\stage\lib;$(hMailServerLibs)\openssl-1.1.1u\out64\lib;..\..\..\..\Libraries\libpq-12.2\x64;$(BOOST_LIBS_PATH);$(OPENSSL_LIBS_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(hMailServerLibs)\boost_1_86_0\stage\lib;$(hMailServerLibs)\openssl-3.3.2\out64\lib;..\..\..\..\Libraries\libpq-12.2\x64;$(BOOST_LIBS_PATH);$(OPENSSL_LIBS_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <ImportLibrary>$(OutDir)hMailServer.lib</ImportLibrary>
       <FixedBaseAddress>false</FixedBaseAddress>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <PostBuildEvent>
       <Message>Performing registration</Message>
-      <Command>xcopy /F /Y $(hMailServerLibs)\openssl-1.1.1u\out64\bin\libcrypto-1_1-x64.dll $(OutDir)
-xcopy /F /Y $(hMailServerLibs)\openssl-1.1.1u\out64\bin\libssl-1_1-x64.dll $(OutDir)
+      <Command>xcopy /F /Y $(hMailServerLibs)\openssl-3.3.2\out64\bin\libcrypto-3-x64.dll $(OutDir)
+xcopy /F /Y $(hMailServerLibs)\openssl-3.3.2\out64\bin\libssl-3-x64.dll $(OutDir)
 xcopy /F /Y $(ProjectDir)..\..\..\..\libraries\libpq-12.2\x64\*.dll $(OutDir)
 "$(TargetPath)" /Register
 </Command>
