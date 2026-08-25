@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Shared;
 using RegressionTests.SSL;
@@ -12,7 +13,6 @@ namespace RegressionTests.SMTP
    [TestFixture]
    public class ReceivedHeaders : TestFixtureBase
    {
-      private hMailServer.Account _account;
       [OneTimeSetUp]
       public new void TestFixtureSetUp()
       {
@@ -24,8 +24,10 @@ namespace RegressionTests.SMTP
       [SetUp]
       public new void SetUp()
       {
-         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
+
+      private Account _account;
 
 
       [Test]
@@ -35,7 +37,8 @@ namespace RegressionTests.SMTP
          string errorMessage;
 
          var client = new SmtpClientSimulator();
-         client.Send(false, _account.Address, "test", _account.Address, _account.Address, "Test", "Test", out errorMessage);
+         client.Send(false, _account.Address, "test", _account.Address, _account.Address, "Test", "Test",
+            out errorMessage);
 
          var message = Pop3ClientSimulator.AssertGetFirstMessageText(_account.Address, "test");
 
@@ -49,7 +52,8 @@ namespace RegressionTests.SMTP
          var smtpClientSimulator = new SmtpClientSimulator(false, 25002);
 
          string errorMessage;
-         smtpClientSimulator.Send(true, string.Empty, string.Empty, _account.Address, _account.Address, "Test", "test", out errorMessage);
+         smtpClientSimulator.Send(true, string.Empty, string.Empty, _account.Address, _account.Address, "Test", "test",
+            out errorMessage);
 
          var message = Pop3ClientSimulator.AssertGetFirstMessageText(_account.Address, "test");
          Assert.IsTrue(message.Contains(" with ESMTPS"));
@@ -108,7 +112,8 @@ namespace RegressionTests.SMTP
             var smtpClientSimulator = new SmtpClientSimulator(false, 25);
 
             string errorMessage;
-            smtpClientSimulator.Send(false, _account.Address, "test", _account.Address, _account.Address, "Test", "test",
+            smtpClientSimulator.Send(false, _account.Address, "test", _account.Address, _account.Address, "Test",
+               "test",
                out errorMessage);
 
             var message = Pop3ClientSimulator.AssertGetFirstMessageText(_account.Address, "test");
@@ -119,6 +124,5 @@ namespace RegressionTests.SMTP
             Assert.Fail(e.ToString());
          }
       }
-
    }
 }

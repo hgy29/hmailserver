@@ -43,7 +43,7 @@ namespace HM
    {
    public:
       SMTPConnection(ConnectionSecurity connection_security,
-         boost::asio::io_service& io_service, 
+         boost::asio::io_context& io_context, 
          boost::asio::ssl::context& context);
 	   virtual ~SMTPConnection();
       
@@ -190,6 +190,10 @@ namespace HM
       std::shared_ptr<Message> current_message_;
 
       bool trace_headers_written_;
+
+      // True if we act as message submission server for the current message, rather
+      // than as a relay. Set when a recipient has been accepted.
+      bool message_submission_;
 
       String username_;
       String password_;

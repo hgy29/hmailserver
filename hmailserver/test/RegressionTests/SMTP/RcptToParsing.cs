@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using hMailServer;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using RegressionTests.Shared;
 
 namespace RegressionTests.SMTP
 {
    [TestFixture]
-   class RcptToParsing : TestFixtureBase
+   internal class RcptToParsing : TestFixtureBase
    {
       [Test]
       public void RcptToValidAddressShouldSucceed()
@@ -69,7 +65,7 @@ namespace RegressionTests.SMTP
       {
          AssertInvalidRcptToCommand("RCPT TO: <>", "550 A valid address is required.");
       }
-      
+
       [Test]
       public void RcptToQuotedAddressWithSpaceShouldSucceed()
       {
@@ -85,13 +81,15 @@ namespace RegressionTests.SMTP
       [Test]
       public void RcptToQuotedAddressWithoutSpaceShouldFail()
       {
-         AssertInvalidRcptToCommand("RCPT TO: <John Smith@example.com>", "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
+         AssertInvalidRcptToCommand("RCPT TO: <John Smith@example.com>",
+            "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
       }
 
       [Test]
       public void RcptToSingleQuoteShouldFail()
       {
-         AssertInvalidRcptToCommand("RCPT TO: \"", "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
+         AssertInvalidRcptToCommand("RCPT TO: \"",
+            "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
       }
 
       [Test]
@@ -110,13 +108,15 @@ namespace RegressionTests.SMTP
       [Test]
       public void RcptToWithSingleGreaterThanShouldFail()
       {
-         AssertInvalidRcptToCommand("RCPT TO: <example@example.com", "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
+         AssertInvalidRcptToCommand("RCPT TO: <example@example.com",
+            "550 Invalid syntax. Syntax should be RCPT TO:<mailbox@domain>[crlf]");
       }
 
       [Test]
       public void RcptToWithUnsupporedESMTPExtensionShouldFail()
       {
-         AssertInvalidRcptToCommand("RCPT TO: <example@example.com> KEY=VALUE", "550 Unsupported ESMTP extension: KEY=VALUE");
+         AssertInvalidRcptToCommand("RCPT TO: <example@example.com> KEY=VALUE",
+            "550 Unsupported ESMTP extension: KEY=VALUE");
       }
 
       [Test]
@@ -175,10 +175,10 @@ namespace RegressionTests.SMTP
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("220"));
          smtpClientSimulator.Send("HELO test\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
-         smtpClientSimulator.Send("MAIL FROM: <test@test.com>\r\n");
+         smtpClientSimulator.Send("MAIL FROM: <test@example.test>\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
 
-         string result = smtpClientSimulator.SendAndReceive(command+ "\r\n");
+         var result = smtpClientSimulator.SendAndReceive(command + "\r\n");
 
          smtpClientSimulator.Disconnect();
 
@@ -192,15 +192,14 @@ namespace RegressionTests.SMTP
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("220"));
          smtpClientSimulator.Send("HELO test\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
-         smtpClientSimulator.Send("MAIL FROM: <test@test.com>\r\n");
+         smtpClientSimulator.Send("MAIL FROM: <test@example.test>\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
 
-         string result = smtpClientSimulator.SendAndReceive(comamnd + "\r\n");
+         var result = smtpClientSimulator.SendAndReceive(comamnd + "\r\n");
 
          smtpClientSimulator.Disconnect();
 
          Assert.AreEqual("250 OK\r\n", result);
       }
-
    }
 }

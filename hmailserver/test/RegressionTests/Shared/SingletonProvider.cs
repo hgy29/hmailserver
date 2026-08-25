@@ -9,10 +9,7 @@ namespace RegressionTests.Shared
       {
       }
 
-      public static T Instance
-      {
-         get { return SingletonCreator.instance; }
-      }
+      public static T Instance => SingletonCreator.instance;
 
       #region Nested type: SingletonCreator
 

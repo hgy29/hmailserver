@@ -7,6 +7,11 @@ This page describes how to compile and run hMailServer in debug.
 
 For other information about hMailServer, please go to http://www.hmailserver.com
 
+No active development
+=====================
+
+hMailServer is no longer being actively developed or maintained. The latest major version was released several years ago. hMailServer relies on algorithms which are considered insecure by modern standards, such as SHA1 and outdated versions of OpenSSL. For that reason, it's recommended that you migrate to an alternative software or service.
+
 Building hMailServer
 ====================
 
@@ -25,7 +30,8 @@ Environment set up
    * An installed version of hMailServer 5.7 (configured with a database)
    * Visual Studio 2019 Community edition
    * InnoSetup 5.5.4a (non-unicode version)
-   * [Perl ActiveState ActivePerl Community Edition 32 bit works fine](https://www.activestate.com/activeperl/downloads)
+   * Perl 5 (https://strawberryperl.com/)
+   * Python 3 (https://www.python.org/)
    
 **NOTE**
 
@@ -51,32 +57,68 @@ Create an environment variable named hMailServerLibs pointing at a folder where 
 
 Building OpenSSL
 ----------------
-1. Download OpenSSL 1.1.1* from http://www.openssl.org/source/ and put it into %hMailServerLibs%\<OpenSSL-Version>.
-   You should now have a folder named %hMailServerLibs%\<OpenSSL-version>, for example C:\Dev\hMailLibs\openssl-1.1.1s
-2. Start a x64 Native Tools Command Prompt for VS2019.
-3. Change dir to %hMailServerLibs%\<OpenSSL-version>.
-3. Run the following commands:
+OpenSSL 3.5.x is built by the `libraries\build-openssl.ps1` script, which downloads the
+requested version into %hMailServerLibs%\openssl-&lt;Version&gt; and builds it into an `out64`
+install prefix (headers, import libs and `libcrypto-3-x64.dll` / `libssl-3-x64.dll`).
+
+Prerequisites:
+- The environment variable hMailServerLibs (see above).
+- Perl (e.g. [Strawberry Perl](https://strawberryperl.com/)) on PATH - required by OpenSSL's Configure.
+- Visual Studio 2019 with the x64 C++ build tools (the script locates vcvars64.bat automatically).
+
+Run, from the repository root:
 
    <pre>
-   Perl Configure no-asm VC-WIN64A --prefix=%cd%\out64 --openssldir=%cd%\out64 -D_WIN32_WINNT=0x600
-   nmake clean   
-   nmake install_sw
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File libraries\build-openssl.ps1 -Version 3.5.x
    </pre>
+
+Only OpenSSL 3.5.x is supported; the build recipe for 3.0.x and 4.x differs.
+
+Building PostgreSQL
+-------------------
+hMailServer talks to PostgreSQL through libpq. libpq is built by the `libraries\build-pgsql.ps1`
+script, which downloads the requested version into %hMailServerLibs%\postgresql-&lt;Version&gt;,
+generates the `src\tools\msvc\config.pl` that links libpq against a previously built OpenSSL, and
+builds `libpq.dll` / `libpq.lib` into `postgresql-&lt;Version&gt;\Release\libpq`.
+
+Prerequisites:
+- The environment variable hMailServerLibs (see above).
+- A matching OpenSSL build (`openssl-&lt;Version&gt;\out64`) already present - build it first with the OpenSSL script above.
+- Perl (e.g. [Strawberry Perl](https://strawberryperl.com/)) on PATH - required by PostgreSQL's build.pl.
+- Visual Studio 2019 with the x64 C++ build tools.
+
+Run, from the repository root:
+
+   <pre>
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File libraries\build-pgsql.ps1 -Version 15.19
+   </pre>
+
+The script auto-detects the OpenSSL version to link against from the hMailServer project; pass
+`-OpenSSLVersion 3.5.x` to override it. Only PostgreSQL 15.x and 16.x are supported (17 removed
+the `src\tools\msvc\build.pl` build system this relies on).
 
 Building Boost
 --------------
-1. Download Boost 1.72.0 from http://www.boost.org/ and put it into %hMailServerLibs%\<Boost-Version>.  
-   You should now have a folder named %hMailServerLibs%\<Boost-Version>, for example C:\Dev\hMailLibs\boost_1_72_0
-2. Start a x64 Native Tools Command Prompt for VS2019.
-3. Change dir to %hMailServerLibs%\<Boost-Version>.
-4. Run the following commands:
- 
-   NOTE: Change the -j parameter from 4 to the number of cores on your computer. The parameter specifies the number of parallel compilations will be done.
+hMailServer links statically against a handful of compiled Boost libraries (thread, filesystem,
+regex, chrono, atomic; Boost.System is header-only as of Boost 1.92). Boost is built by the
+`libraries\build-boost.ps1` script, which
+downloads the requested version into %hMailServerLibs%\boost_&lt;Version&gt; (e.g. `boost_1_92_0`),
+bootstraps `b2`, and builds the static, multithreaded x64 libraries into `stage\lib`.
+
+Prerequisites:
+- The environment variable hMailServerLibs (see above).
+- Visual Studio 2019 with the x64 C++ build tools (the script locates vcvars64.bat automatically
+  and drives `b2` with the msvc-14.2 toolset).
+
+Run, from the repository root:
 
    <pre>
-   bootstrap
-   b2 debug release threading=multi --build-type=complete --toolset=msvc address-model=64 stage --build-dir=out64 -j 4
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File libraries\build-boost.ps1 -Version 1.92.0
    </pre>
+
+Pass `-Toolset &lt;name&gt;` to override the default `msvc-14.2`, or `-Jobs &lt;n&gt;` to change the
+number of parallel compilations (defaults to the number of logical processors). Only Boost 1.x is
+supported.
 
 Building hMailServer
 --------------------

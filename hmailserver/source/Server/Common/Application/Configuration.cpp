@@ -638,6 +638,25 @@ namespace HM
       GetSettings()->SetLong(PROPERTY_SSLVERSIONS, versions);
    }
 
+   bool
+   Configuration::GetTlsOptionEnabled(TlsOption option) const
+   {
+      return (GetSettings()->GetLong(PROPERTY_TLSOPTIONS) & option) ? true : false;
+   }
+
+   void
+   Configuration::SetTlsOptionEnabled(TlsOption option, bool enabled)
+   {
+      int options = GetSettings()->GetLong(PROPERTY_TLSOPTIONS);
+
+      if (enabled)
+         options = options | option;
+      else
+         options = options &~option;
+
+      GetSettings()->SetLong(PROPERTY_TLSOPTIONS, options);
+   }
+
    void
    Configuration::SetIPv6Preferred(bool newVal)
    {
@@ -648,6 +667,18 @@ namespace HM
    Configuration::GetIPv6Preferred()
    {
       return GetSettings()->GetBool(PROPERTY_IPV6_PREFERRED);
+   }
+
+   void
+   Configuration::SetCreateDefaultSpecialUseFolders(bool newVal)
+   {
+      GetSettings()->SetBool(PROPERTY_CREATE_DEFAULT_SPECIAL_USE_FOLDERS, newVal);
+   }
+
+   bool
+   Configuration::GetCreateDefaultSpecialUseFolders()
+   {
+      return GetSettings()->GetBool(PROPERTY_CREATE_DEFAULT_SPECIAL_USE_FOLDERS);
    }
 
    int

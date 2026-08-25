@@ -158,7 +158,7 @@ namespace HM
 	   for (auto it=field_coders_.begin(); it!=field_coders_.end(); it++)
 	   {
 		   ASSERT((*it).first != NULL);
-		   if (::_stricmp(pszFieldName, (*it).first))
+		   if (!::_stricmp(pszFieldName, (*it).first))
 		   {
 			   FIELD_CODER_FACTORY pfnCreateObject = (*it).second;
 			   ASSERT(pfnCreateObject != NULL);
@@ -213,10 +213,9 @@ namespace HM
    //////////////////////////////////////////////////////////////////////
    void MimeCode7bit::Encode(AnsiString &output) const
    {
-	   const unsigned char* pbData = input_;
-	   const unsigned char* pbEnd = input_ + input_size_;
-	   unsigned char* pbSpace = NULL;
-	   int nLineLen = 0;
+      const unsigned char* pbData = input_;
+      const unsigned char* pbEnd = input_ + input_size_;
+      int nLineLen = 0;
       int lastSpacePos = -1;
 	   
       while (pbData < pbEnd)
@@ -260,8 +259,6 @@ namespace HM
 	   const unsigned char* pbData = input_;
 	   const unsigned char* pbEnd = input_ + input_size_;
 	   int nLineLen = 0;
-   
-      int lastSpacePos = -1;
 
 	   while (pbData < pbEnd)
 	   {
@@ -274,23 +271,19 @@ namespace HM
 		   {
 			   if (pbData == pbEnd-1 || (!quote_line_break_ && *(pbData+1) == '\r'))
 				   bQuote = true;		// quote the SPACE/TAB
+			   else if (add_line_break_ && nLineLen >= MAX_MIME_LINE_LEN - 4)
+				   bQuote = true;		// any following char (max encoded cost=3) cannot push nLineLen to 76 before this space, so quoting here guarantees no literal whitespace precedes a soft break
 			   else
 				   bCopy = true;		// copy the SPACE/TAB
-			   
-            if (nLineLen > 0)
-            {
-               lastSpacePos = (int) output.size();
-            }
 		   }
 		   else if (!quote_line_break_ && (ch == '\r' || ch == '\n'))
 		   {
 			   bCopy = true;			// keep 'hard' line break
 			   nLineLen = -1;
-			   lastSpacePos = -1;
 		   }
 		   else if (!quote_line_break_ && ch == '.')
 		   {
-			   if (pbData-input_ >= 2 &&
+			   if (pbData-input_ >= 2 && pbData+2 < pbEnd &&
 				   *(pbData-2) == '\r' && *(pbData-1) == '\n' &&
 				   *(pbData+1) == '\r' && *(pbData+2) == '\n')
 				   bQuote = true;		// avoid confusing with SMTP's message end flag
@@ -304,30 +297,11 @@ namespace HM
 
          if (add_line_break_)
          {
-            if (nLineLen+(bQuote ? 3 : 1) >= MAX_MIME_LINE_LEN)
-		      {
-			      if (lastSpacePos != -1)
-			      {
-                  // TODO: Implement?!
-                  ASSERT(0);
-                  /*lastSpacePos++;
-				      int nSize = output.size() - lastSpacePos;
-                  
-                  output = output.Mid(0, lastSpacePos+2) + output.Mid(;
-                  
-
-				      ::memmove(pbSpace+3, pbSpace, nSize);
-				      nLineLen = nSize;*/
-			      }
-			      else
-			      {
-                  lastSpacePos = (int) output.size();
-				      //pbSpace = pbOutput;
-				      nLineLen = 0;
-			      }
-
+            if (nLineLen + (bQuote ? 3 : 1) >= MAX_MIME_LINE_LEN)
+            {
                output.append("=\r\n");
-		      }
+               nLineLen = 0;
+            }
          }
 
 		   if (bQuote)
@@ -765,7 +739,7 @@ namespace HM
 
 	   const char* pszInput = (const char*) input_;
       size_t nInputSize = input_size_;
-	   int nNonAsciiChars, nDelimeter = GetDelimeter();
+	   int nNonAsciiChars, nDelimiter = GetDelimiter();
 	   int nLineLen = 0;
 	   
       AnsiString strUnit;
@@ -773,7 +747,7 @@ namespace HM
 	   // divide the field into syntactic units to encode
 	   for (;;)
 	   {
-		   size_t nUnitSize = FindSymbol(pszInput, nInputSize, nDelimeter, nNonAsciiChars);
+		   size_t nUnitSize = FindSymbol(pszInput, nInputSize, nDelimiter, nNonAsciiChars);
 		   if (!nNonAsciiChars || strCharset.empty())
          {
 			   strUnit.assign(pszInput, nUnitSize);
@@ -787,7 +761,7 @@ namespace HM
             coder.GetOutput(strUnit);
 		   }
 		   if (nUnitSize < nInputSize)
-			   strUnit += pszInput[nUnitSize];		// add the following delimeter (space or special char)
+			   strUnit += pszInput[nUnitSize];		// add the following delimiter (space or special char)
 
 		   // copy the encoded string to target buffer and perform folding if needed
 		   if (!MimeEnvironment::AutoFolding())
@@ -803,7 +777,7 @@ namespace HM
 
 			   while (pszData < pszEnd)
 			   {
-				   char ch = *pszData++;
+               char ch = *pszData;
 				   if (ch == '\r' || ch == '\n')
 				   {
 					   nLineLen = -1;
@@ -832,7 +806,8 @@ namespace HM
 				   
                output.append(1, ch);
 
-				   nLineLen++;
+               pszData++;
+               nLineLen++;
 			   }
 		   }
 
@@ -897,7 +872,7 @@ namespace HM
 	   }
    }
 
-   int FieldCodeBase::FindSymbol(const char* pszData, size_t nSize, int& nDelimeter, int& nNonAscChars) const
+   int FieldCodeBase::FindSymbol(const char* pszData, size_t nSize, int& nDelimiter, int& nNonAscChars) const
    {
 	   nNonAscChars = 0;
 	   const char* pszDataStart = pszData;
@@ -910,9 +885,9 @@ namespace HM
 			   nNonAscChars++;
 		   else
 		   {
-			   if (ch == (char) nDelimeter)
+			   if (ch == (char)nDelimiter)
 			   {
-				   nDelimeter = 0;		// stop at any delimeters (space or specials)
+				   nDelimiter = 0;		// stop at any delimiters (space or specials)
 				   break;
 			   }
 
@@ -923,7 +898,7 @@ namespace HM
             The notation of RFC 822 is used, with the exception that white space
             characters MUST NOT appear between components of an 'encoded-word'.
             */
-            if (!nDelimeter && CMimeChar::IsSpecial(ch))
+            if (!nDelimiter && CMimeChar::IsSpecial(ch))
 			   {
                if (pszData > pszDataStart)
                {
@@ -931,22 +906,22 @@ namespace HM
                   if (CMimeChar::IsSpace(previousChar))
                   {
                      pszData--;
-                     nDelimeter = ' ';
+                     nDelimiter = ' ';
                   }
                }
                
-               if (nDelimeter == 0 )
+               if (nDelimiter == 0 )
                {
 				      switch (ch)
 				      {
 				      case '"':
-					      nDelimeter = '"';	// quoted-string, delimeter is '"'
+					      nDelimiter = '"';	// quoted-string, delimiter is '"'
 					      break;
 				      case '(':
-					      nDelimeter = ')';	// comment, delimeter is ')'
+					      nDelimiter = ')';	// comment, delimetir is ')'
 					      break;
 				      case '<':
-					      nDelimeter = '>';	// address, delimeter is '>'
+					      nDelimiter = '>';	// address, delimetir is '>'
 					      break;
 				      }
                }

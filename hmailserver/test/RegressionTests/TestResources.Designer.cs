@@ -62,7 +62,7 @@ namespace RegressionTests {
         
         /// <summary>
         ///   Looks up a localized string similar to From: &quot;Example&quot; &lt;sender@example.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Tue, 7 Oct 2014 10:21:38 +0700
         ///MIME-Version: 1.0
@@ -79,7 +79,7 @@ namespace RegressionTests {
         
         /// <summary>
         ///   Looks up a localized string similar to From: &quot;Example&quot; &lt;sender@example.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Tue, 7 Oct 2014 10:21:38 +0700
         ///MIME-Version: 1.0
@@ -94,8 +94,8 @@ namespace RegressionTests {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to From: &quot;Test&quot; &lt;test@test.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///   Looks up a localized string similar to From: &quot;Test&quot; &lt;test@example.test&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Thu, 9 Oct 2014 15:53:22 +0200
         ///Content-Type: multipart/alternative;
@@ -123,7 +123,7 @@ namespace RegressionTests {
         
         /// <summary>
         ///   Looks up a localized string similar to From: &quot;Example&quot; &lt;sender@example.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Tue, 7 Oct 2014 10:21:38 +0700
         ///MIME-Version: 1.0
@@ -148,7 +148,7 @@ namespace RegressionTests {
         
         /// <summary>
         ///   Looks up a localized string similar to From: &quot;Example&quot; &lt;sender@example.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Tue, 7 Oct 2014 10:21:38 +0700
         ///MIME-Version: 1.0
@@ -173,7 +173,7 @@ namespace RegressionTests {
         
         /// <summary>
         ///   Looks up a localized string similar to From: &quot;Example&quot; &lt;sender@example.com&gt;
-        ///To: &lt;test@test.com&gt;
+        ///To: &lt;test@example.test&gt;
         ///Subject: test
         ///Date: Tue, 7 Oct 2014 10:21:38 +0700
         ///MIME-Version: 1.0
@@ -185,6 +185,24 @@ namespace RegressionTests {
         internal static string EmailWith_TextPlainBody_TextPlainContentType {
             get {
                 return ResourceManager.GetString("EmailWith_TextPlainBody_TextPlainContentType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=outlook.com; s=selector1; h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck; bh=syNc2SLm55vlwN6IjdVrbij1wTNuoXAo8x12RY/gyIU=; b=hWRmlUPrqWbCw+W27/cfsY0gTs06oYYNVTAPYhz+PlV4jKaz/ArzaMEkz9AimJVYzoS6sspI0JB21Z/VKlbiU+iH4lQcmPS7xF3+yKv2lODPuoioWtrGSS+nWYRhImYri8718yWPZPQlBEZ4wutFs80EJK9ASMmREOPfLN/wfjMVszqa18IRCvHNJD1Ed+YMCgyPV3/NzhrldTwzIbNBz8gBHYYeqmTIIZRWm549Hc/57DIJI9Yef7HtOyZjqpszLavp3sMvKqPtjU7VWChxaO9FkMkZBDGZSkUUk [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string MessageWithInvalidDkim {
+            get {
+                return ResourceManager.GetString("MessageWithInvalidDkim", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=outlook.com; s=selector1; h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck; bh=syNc2SLm55vlwN6IjdVrbij1wTNuoXAo8x12RY/gyIU=; b=hWRmlUPrqWbCw+W27/cfsY0gTs06oYYNVTAPYhz+PlV4jKaz/ArzaMEkz9AimJVYzoS6sspI0JB21Z/VKlbiU+iH4lQcmPS7xF3+yKv2lODPuoioWtrGSS+nWYRhImYri8718yWPZPQlBEZ4wutFs80EJK9ASMmREOPfLN/wfjMVszqa18IRCvHNJD1Ed+YMCgyPV3/NzhrldTwzIbNBz8gBHYYeqmTIIZRWm549Hc/57DIJI9Yef7HtOyZjqpszLavp3sMvKqPtjU7VWChxaO9FkMkZBDGZSkUUk [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string MessageWithValidDkim {
+            get {
+                return ResourceManager.GetString("MessageWithValidDkim", resourceCulture);
             }
         }
         

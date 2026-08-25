@@ -9,7 +9,7 @@ using RegressionTests.Infrastructure;
 namespace RegressionTests.Shared
 {
    /// <summary>
-   /// Summary description for POP3ClientSimulator.
+   ///    Summary description for POP3ClientSimulator.
    /// </summary>
    public class Pop3ClientSimulator
    {
@@ -20,7 +20,6 @@ namespace RegressionTests.Shared
       public Pop3ClientSimulator() :
          this(false, 110)
       {
-         
       }
 
 
@@ -49,7 +48,7 @@ namespace RegressionTests.Shared
 
       public bool TestConnect(int iPort)
       {
-         bool bRetVal = _tcpConnection.Connect(_ipaddress, iPort);
+         var bRetVal = _tcpConnection.Connect(_ipaddress, iPort);
          _tcpConnection.Disconnect();
          return bRetVal;
       }
@@ -57,7 +56,7 @@ namespace RegressionTests.Shared
       public string GetWelcomeMessage()
       {
          _tcpConnection.Connect(_ipaddress, _port);
-         string sData = _tcpConnection.Receive();
+         var sData = _tcpConnection.Receive();
 
          _tcpConnection.Disconnect();
          return sData;
@@ -114,11 +113,11 @@ namespace RegressionTests.Shared
 
       public string RETR(int index)
       {
-         _tcpConnection.Send("RETR " + index.ToString() + "\r\n");
+         _tcpConnection.Send("RETR " + index + "\r\n");
 
          var result = new StringBuilder();
 
-         string eofCheck = "";
+         var eofCheck = "";
 
          while (eofCheck.IndexOf("\r\n.\r\n") < 0)
          {
@@ -128,15 +127,13 @@ namespace RegressionTests.Shared
                throw new Exception(string.Format("Message with index {0} does not exist.", index));
             }
 
-            string data = _tcpConnection.Receive();
+            var data = _tcpConnection.Receive();
 
             eofCheck += data;
 
             if (eofCheck.Length > 25)
-            {
                // Only save the end of the string.
                eofCheck = eofCheck.Substring(eofCheck.Length - 25);
-            }
 
             result.Append(data);
          }
@@ -146,7 +143,7 @@ namespace RegressionTests.Shared
 
       public string LIST()
       {
-         string sRetVal = "";
+         var sRetVal = "";
 
          _tcpConnection.Send("LIST\r\n");
 
@@ -169,7 +166,7 @@ namespace RegressionTests.Shared
       {
          string sRetVal;
 
-         _tcpConnection.Send("LIST " + index.ToString() + "\r\n");
+         _tcpConnection.Send("LIST " + index + "\r\n");
 
          sRetVal = _tcpConnection.Receive();
 
@@ -186,7 +183,7 @@ namespace RegressionTests.Shared
 
       public string UIDL()
       {
-         string sRetVal = "";
+         var sRetVal = "";
 
          _tcpConnection.Send("UIDL\r\n");
 
@@ -208,7 +205,7 @@ namespace RegressionTests.Shared
       {
          string sRetVal;
 
-         _tcpConnection.Send("UIDL " + index.ToString() + "\r\n");
+         _tcpConnection.Send("UIDL " + index + "\r\n");
 
          sRetVal = _tcpConnection.Receive();
 
@@ -217,8 +214,8 @@ namespace RegressionTests.Shared
 
       public bool DELE(int index)
       {
-         _tcpConnection.Send("DELE " + index.ToString() + "\r\n");
-         string data = _tcpConnection.ReadUntil(new List<string> { "+OK msg deleted", "-ERR No such message" });
+         _tcpConnection.Send("DELE " + index + "\r\n");
+         var data = _tcpConnection.ReadUntil(new List<string> { "+OK msg deleted", "-ERR No such message" });
          return data.StartsWith("+OK msg deleted");
       }
 
@@ -241,17 +238,14 @@ namespace RegressionTests.Shared
       public string TOP(int index, int rows)
       {
          if (rows > 0)
-            _tcpConnection.Send("TOP " + index.ToString() + " " + rows.ToString() + "\r\n");
+            _tcpConnection.Send("TOP " + index + " " + rows + "\r\n");
          else
-            _tcpConnection.Send("TOP " + index.ToString() + "\r\n");
+            _tcpConnection.Send("TOP " + index + "\r\n");
 
-         string sRetVal = _tcpConnection.Receive();
+         var sRetVal = _tcpConnection.Receive();
          while (sRetVal.IndexOf("\r\n.\r\n") < 0)
          {
-            if (sRetVal.IndexOf("-ERR No such message") >= 0)
-            {
-               return sRetVal;
-            }
+            if (sRetVal.IndexOf("-ERR No such message") >= 0) return sRetVal;
 
             sRetVal += _tcpConnection.Receive();
          }
@@ -277,7 +271,7 @@ namespace RegressionTests.Shared
          if (!ConnectAndLogon(sUsername, sPassword))
             throw new Exception("Unable to connect to server.");
 
-         string sRetVal = RETR(1);
+         var sRetVal = RETR(1);
          DELE(1);
          QUIT();
 
@@ -292,23 +286,24 @@ namespace RegressionTests.Shared
             throw new Exception(string.Format("Unable to connect to POP3 server on localhost on port {0}", _port));
 
          // Receive welcome message.
-         string sData = _tcpConnection.Receive();
+         var sData = _tcpConnection.Receive();
 
          _tcpConnection.Send("USER " + sUsername + "\r\n");
          sData = _tcpConnection.ReadUntil("+OK Send your password");
 
          _tcpConnection.Send("PASS " + sPassword + "\r\n");
-         sData = _tcpConnection.ReadUntil(new List<string> { "+OK Mailbox locked and ready", "-ERR Invalid user name or password." });
+         sData = _tcpConnection.ReadUntil(new List<string>
+            { "+OK Mailbox locked and ready", "-ERR Invalid user name or password." });
          Assert.IsTrue(sData.Contains("+OK Mailbox locked and ready"), sData);
 
          _tcpConnection.Send("LIST\r\n");
          sData = _tcpConnection.ReadUntil("+OK");
 
          // Check EXISTS header.
-         int iStartPos = 4;
-         int iEndPos = sData.IndexOf(" ", iStartPos);
-         int iLength = iEndPos - iStartPos;
-         string sValue = sData.Substring(iStartPos, iLength);
+         var iStartPos = 4;
+         var iEndPos = sData.IndexOf(" ", iStartPos);
+         var iLength = iEndPos - iStartPos;
+         var sValue = sData.Substring(iStartPos, iLength);
 
          _tcpConnection.Send("QUIT\r\n");
          sData = _tcpConnection.ReadUntil("+OK POP3 server saying goodbye...");
@@ -328,19 +323,18 @@ namespace RegressionTests.Shared
          AssertMessageCount(accountName, accountPassword, expectedCount, TimeSpan.FromSeconds(30));
       }
 
-      public static void AssertMessageCount(string accountName, string accountPassword, int expectedCount, TimeSpan timeout)
+      public static void AssertMessageCount(string accountName, string accountPassword, int expectedCount,
+         TimeSpan timeout)
       {
          var timeoutTime = DateTime.UtcNow + timeout;
 
          if (expectedCount == 0)
-         {
             // just in case.
             CustomAsserts.AssertRecipientsInDeliveryQueue(0);
-         }
 
-         int actualCount = 0;
+         var actualCount = 0;
 
-         DateTime lastDebugEntryTimestamp = DateTime.UtcNow;
+         var lastDebugEntryTimestamp = DateTime.UtcNow;
 
 
          while (DateTime.UtcNow < timeoutTime)
@@ -352,14 +346,13 @@ namespace RegressionTests.Shared
                return;
 
             if (actualCount > expectedCount)
-               Assert.Fail(
-                  string.Format(
-                     "Actual count exceeds expected count. Account name: {2}, Actual: {0}, Expected: {1}.",
-                     actualCount, expectedCount, accountName));
+               Assert.Fail("Actual count exceeds expected count. Account name: {2}, Actual: {0}, Expected: {1}.",
+                  actualCount, expectedCount, accountName);
 
             if (DateTime.UtcNow - lastDebugEntryTimestamp > TimeSpan.FromSeconds(10))
             {
-               Console.WriteLine("Waiting for messages to appear in account. Actual: {0}, Expected: {1}", actualCount, expectedCount);
+               Console.WriteLine("Waiting for messages to appear in account. Actual: {0}, Expected: {1}", actualCount,
+                  expectedCount);
 
                lastDebugEntryTimestamp = DateTime.UtcNow;
             }
@@ -367,15 +360,15 @@ namespace RegressionTests.Shared
             Thread.Sleep(50);
          }
 
-         Assert.Fail(string.Format("Wrong number of messages in inbox for {0}. Actual: {1}, Expected: {2}",
-                                   accountName, actualCount, expectedCount));
+         Assert.Fail("Wrong number of messages in inbox for {0}. Actual: {1}, Expected: {2}", accountName, actualCount,
+            expectedCount);
       }
 
       public static string AssertGetFirstMessageText(string accountName, string accountPassword)
       {
          // Wait for the message to appear.
          var pop3 = new Pop3ClientSimulator();
-         for (int i = 0; i < 5000; i++)
+         for (var i = 0; i < 5000; i++)
          {
             if (pop3.GetMessageCount(accountName, accountPassword) > 0)
                break;
@@ -384,7 +377,7 @@ namespace RegressionTests.Shared
          }
 
          // Download it.
-         string text = pop3.GetFirstMessageText(accountName, accountPassword);
+         var text = pop3.GetFirstMessageText(accountName, accountPassword);
 
          if (text.Length == 0)
             Assert.Fail("Message was found but contents could not be received");

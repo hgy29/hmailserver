@@ -32,7 +32,7 @@ namespace StressTest
 
          CustomAsserts.AssertSpamAssassinIsRunning();
 
-         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
 
       [Test]
@@ -40,7 +40,7 @@ namespace StressTest
       {
          for (int i = 0; i < 15; i++)
          {
-             SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "test", "test");
+             SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "test", "test");
          }
 
          Pop3ClientSimulator.AssertMessageCount(_account.Address, "test", 15);
@@ -98,7 +98,7 @@ namespace StressTest
 
             var message = messageBuilder.ToString();
 
-            SmtpClientSimulator.StaticSendRaw("test@test.com", "test@test.com", message);
+            SmtpClientSimulator.StaticSendRaw("test@example.test", "test@example.test", message);
 
             var defaultLog = LogHandler.ReadCurrentDefaultLog();
             
@@ -106,7 +106,7 @@ namespace StressTest
             
             LogHandler.DeleteCurrentDefaultLog();
 
-            Pop3ClientSimulator.AssertGetFirstMessageText("test@test.com", "test");
+            Pop3ClientSimulator.AssertGetFirstMessageText("test@example.test", "test");
 
             Console.WriteLine("{0} / 100000", i);
          }
@@ -116,7 +116,7 @@ namespace StressTest
       {
          for (int message = 0; message < _threadedMessageCount; message++)
          {
-             SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "test", "test");
+             SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "test", "test");
          }
       }
 

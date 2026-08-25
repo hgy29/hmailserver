@@ -24,7 +24,7 @@ namespace StressTest
       [SetUp]
       public new void SetUp()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
 
       [Test]
@@ -38,7 +38,7 @@ namespace StressTest
          for (int i = 0; i < 1000; i++)
          {
             hMailServer.Account account =
-                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@test.com", i), "test");
+                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@example.test", i), "test");
 
             recipients.Add(account.Address);
 
@@ -47,17 +47,17 @@ namespace StressTest
 
          Marshal.ReleaseComObject(accounts);
 
-         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "list@test.com", recipients);
+         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "list@example.test", recipients);
 
          var sw = new Stopwatch();
          sw.Start();
-         SmtpClientSimulator.StaticSend("test@test.com", "list@test.com", "Test", "Test message");
+         SmtpClientSimulator.StaticSend("test@example.test", "list@example.test", "Test", "Test message");
          sw.Stop();
 
          Console.WriteLine("Elapsed time: " + sw.Elapsed.TotalSeconds);
 
          string dataDir =
-             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "test.com");
+             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "example.test");
 
          // Check number of accounts.
          RetryHelper.TryAction(() =>
@@ -90,7 +90,7 @@ namespace StressTest
          for (int i = 0; i < 1000; i++)
          {
             hMailServer.Account account =
-                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@test.com", i), "test");
+                SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("list{0}@example.test", i), "test");
 
             recipients.Add(account.Address);
 
@@ -106,13 +106,13 @@ namespace StressTest
 
          var sw = new Stopwatch();
          sw.Start();
-         SmtpClientSimulator.StaticSend("test@test.com", recipients, "Test", "Test message");
+         SmtpClientSimulator.StaticSend("test@example.test", recipients, "Test", "Test message");
          sw.Stop();
 
          Console.WriteLine("Elapsed time: " + sw.Elapsed.TotalSeconds);
 
          string dataDir =
-             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "test.com");
+             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "example.test");
 
          // Check number of accounts.
          RetryHelper.TryAction(() =>
@@ -129,7 +129,7 @@ namespace StressTest
       public void TestSendToTooManyRecipients()
       {
          hMailServer.Accounts accounts = _domain.Accounts;
-         SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("sender@test.com"), "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(accounts, string.Format("sender@example.test"), "test");
 
          var sock = new TcpConnection();
          sock.Connect(25);
@@ -138,7 +138,7 @@ namespace StressTest
          sock.Send("EHLO test.com\r\n");
          result = sock.ReadUntil("\r\n");
          Assert.IsTrue(result.StartsWith("250"));
-         sock.Send("MAIL FROM: sender@test.com\r\n");
+         sock.Send("MAIL FROM: sender@example.test\r\n");
          result = sock.ReadUntil("\r\n");
          Assert.IsTrue(result.StartsWith("250"));
 
@@ -173,7 +173,7 @@ namespace StressTest
       public void TestSend200KMessages()
       {
          string dataDir =
-             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "test.com");
+             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "example.test");
 
          string accountDir = Path.Combine(dataDir, "test");
 
@@ -185,7 +185,7 @@ namespace StressTest
 
          for (int i = 1; i <= numberOfMessages; i++)
          {
-            SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "Test", "Test message");
+            SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "Test", "Test message");
 
             if (i % 100 == 0)
             {
@@ -219,7 +219,7 @@ namespace StressTest
       public void TestSendAttachments()
       {
          string dataDir =
-             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "test.com");
+             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "example.test");
 
          string accountDir = Path.Combine(dataDir, "test");
 
@@ -230,8 +230,8 @@ namespace StressTest
 
          string executableName = Shared.GetExecutableName();
 
-         var mail = new MailMessage {From = new MailAddress("test@test.com")};
-         mail.To.Add("test@test.com");
+         var mail = new MailMessage {From = new MailAddress("test@example.test")};
+         mail.To.Add("test@example.test");
          mail.Subject = "Automatic test";
          mail.Body = "Automatic test";
          mail.BodyEncoding = Encoding.GetEncoding(1252);
@@ -331,9 +331,9 @@ namespace StressTest
 
          sb.Append(Environment.NewLine);
 
-         socket.Send("MAIL FROM: test@test.com\r\n");
+         socket.Send("MAIL FROM: test@example.test\r\n");
          socket.Receive();
-         socket.Send("RCPT TO: test@test.com\r\n");
+         socket.Send("RCPT TO: test@example.test\r\n");
          socket.Receive();
          socket.Send("DATA\r\n");
          socket.Receive();
@@ -387,9 +387,9 @@ namespace StressTest
             sb.Append("01234567890012345678900123456789001234567890012345678900123456789001234567890012345678900123456789001234567890");
          }
 
-         socket.Send("MAIL FROM: test@test.com\r\n");
+         socket.Send("MAIL FROM: test@example.test\r\n");
          socket.Receive();
-         socket.Send("RCPT TO: test@test.com\r\n");
+         socket.Send("RCPT TO: test@example.test\r\n");
          socket.Receive();
          socket.Send("DATA\r\n");
          socket.Receive();
@@ -435,7 +435,7 @@ namespace StressTest
          SingletonProvider<TestSetup>.Instance.GetApp().Settings.AntiSpam.SpamAssassinEnabled = true;
 
          string dataDir =
-             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "test.com");
+             Path.Combine(SingletonProvider<TestSetup>.Instance.GetApp().Settings.Directories.DataDirectory, "example.test");
 
          string accountDir = Path.Combine(dataDir, "test");
 
@@ -445,8 +445,8 @@ namespace StressTest
          const int numberOfMessages = 100;
 
          var mail = new MailMessage();
-         mail.From = new MailAddress("test@test.com");
-         mail.To.Add("test@test.com");
+         mail.From = new MailAddress("test@example.test");
+         mail.To.Add("test@example.test");
          mail.Subject = "Automatic server test";
          mail.Body = "Automatic server test";
          mail.BodyEncoding = Encoding.GetEncoding(1252);

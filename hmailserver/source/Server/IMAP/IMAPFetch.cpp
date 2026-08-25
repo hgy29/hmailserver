@@ -267,6 +267,13 @@ namespace HM
          // Jump forward to the start of the buffer.
          iBufferSize -= iOctetStart;
 
+         if (iBufferSize <= 0)
+         {
+            iOutStart = 0;
+            iOutCount = 0;
+            return;
+         }
+
          // Check if block size is within buffer.
          if (iOctetCount > iBufferSize)
          {
@@ -282,8 +289,8 @@ namespace HM
       iOutCount = iOctetCount;
    }
 
-   std::shared_ptr<MimeBody> 
-   IMAPFetch::GetBodyPartByRecursiveIdentifier_(std::shared_ptr<MimeBody> pBody, const String &sName)
+   std::shared_ptr<MimeBody>
+   IMAPFetch::GetBodyPartByRecursiveIdentifier_(std::shared_ptr<MimeBody> pBody, const String &sName, bool loadEncapsulated)
    //---------------------------------------------------------------------------()
    // DESCRIPTION:
    // Returns a body part by a given identifier. An identifier can be 1, 2, 1.2 etc.
@@ -320,7 +327,13 @@ namespace HM
                return pBody;
             }
 
-            if (pBody->IsEncapsulatedRFC822Message())
+            // loadEncapsulated controls only the final path component; intermediate
+            // message/rfc822 parts must always be loaded so traversal can continue.
+            auto nextIter = std::next(iterPart);
+            bool isFinalComponent = (nextIter == vecPartPath.end());
+            bool shouldLoad = isFinalComponent ? loadEncapsulated : true;
+
+            if (shouldLoad && pBody->IsEncapsulatedRFC822Message())
             {
                try
                {
@@ -362,6 +375,66 @@ namespace HM
          return pOutBuf;
       }
 
+      // For BODY[X.MIME], navigate to the named part without loading any encapsulated
+      // message so that GetHeaderContents() returns the outer MIME headers of the part
+      // (e.g. Content-Type: message/rfc822) rather than the inner message's headers.
+      if (oPart.GetShowBodyMime())
+      {
+         if (!oPart.GetName().IsEmpty())
+            pBodyPart = GetBodyPartByRecursiveIdentifier_(pBodyPart, oPart.GetName(), false);
+
+         if (!pBodyPart)
+            return pOutBuf;
+
+         int iByteStart = 0;
+         int iByteCount = 0;
+         AnsiString sHeaderContents = pBodyPart->GetHeaderContents();
+         GetBytesToSend_(sHeaderContents.GetLength(), oPart, iByteStart, iByteCount);
+         sHeaderContents = sHeaderContents.Mid(iByteStart, iByteCount);
+         pOutBuf->Add((BYTE*) sHeaderContents.GetBuffer(0), sHeaderContents.GetLength());
+         return pOutBuf;
+      }
+
+      // For BODY[N] with no sub-specifier: navigate without loading the encapsulated
+      // message, then serialize based on content type. Must run before the default
+      // navigation below, which loads the encapsulated message unconditionally.
+      if (oPart.GetShowBodyContent())
+      {
+         if (!oPart.GetName().IsEmpty())
+            pBodyPart = GetBodyPartByRecursiveIdentifier_(pBodyPart, oPart.GetName(), false);
+
+         if (!pBodyPart)
+            return pOutBuf;
+
+         int iByteStart = 0;
+         int iByteCount = 0;
+         AnsiString body;
+         if (pBodyPart->IsEncapsulatedRFC822Message())
+         {
+            // BODY[2] on message/rfc822: the "body" of this MIME entity is the full
+            // inner RFC2822 message. Load it and Store with headers=true so the inner
+            // message's RFC2822 headers (From, Subject, etc.) are included.
+            try
+            {
+               pBodyPart = pBodyPart->LoadEncapsulatedMessage();
+               pBodyPart->Store(body, true);
+            }
+            catch (...)
+            {
+               ErrorManager::Instance()->ReportError(ErrorManager::Medium, 5060, "IMAPFetch::GetByteBufferByBodyPart_", "Error loading encapsulated message for BODY[N] fetch.");
+               return pOutBuf;
+            }
+         }
+         else
+         {
+            pBodyPart->Store(body, false);
+         }
+
+         GetBytesToSend_(body.GetLength(), oPart, iByteStart, iByteCount);
+         pOutBuf->Add((BYTE*) body.GetBuffer() + iByteStart, iByteCount);
+         return pOutBuf;
+      }
+
       // First make sure that we got the right part of it.
       if (!oPart.GetName().IsEmpty())
       {
@@ -380,9 +453,9 @@ namespace HM
          // Add HEADER
          AnsiString sHeaderContents = pBodyPart->GetHeaderContents();
          GetBytesToSend_(sHeaderContents.GetLength(), oPart, iByteStart, iByteCount);
-         sHeaderContents.Mid(iByteStart, iByteCount);
+         sHeaderContents = sHeaderContents.Mid(iByteStart, iByteCount);
          pOutBuf->Add((BYTE*) sHeaderContents.GetBuffer(0), sHeaderContents.GetLength());
-      }      
+      }
       else if (oPart.GetShowBodyText())
       {
          // RFC: The TEXT part specifier refers to the text body of the message,
@@ -463,9 +536,7 @@ namespace HM
          sResponse += "\r\n";
 
          GetBytesToSend_(sResponse.GetLength(), oPart, iByteStart, iByteCount);
-         sResponse.Mid(iByteStart, iByteCount);
-
-         AnsiString sAS = sResponse;
+         AnsiString sAS = sResponse.Mid(iByteStart, iByteCount);
          pOutBuf->Add((BYTE*) sAS.GetBuffer(0), sAS.GetLength());
 
       }
@@ -523,9 +594,7 @@ namespace HM
          sResponse += "\r\n";
 
          GetBytesToSend_(sResponse.GetLength(), oPart, iByteStart, iByteCount);
-         sResponse.Mid(iByteStart,iByteCount);
-
-         AnsiString sAS = sResponse;
+         AnsiString sAS = sResponse.Mid(iByteStart, iByteCount);
          pOutBuf->Add((BYTE*) sAS.GetBuffer(0), sAS.GetLength());
 
       }

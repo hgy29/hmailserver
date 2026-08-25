@@ -3,40 +3,31 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Net.Mail;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.ServiceProcess;
 using System.Text;
 using System.Threading;
-using NUnit.Framework;
 using hMailServer;
+using NUnit.Framework;
 using RegressionTests.Infrastructure;
 
 namespace RegressionTests.Shared
 {
    public class TestSetup
    {
-      private Application application;
-      private Settings _settings;
-
       private static int _freePort = 20000;
-
-      public TestSetup()
-      {
-
-      }
+      private Settings _settings;
+      private Application application;
 
       public void Authenticate()
       {
          application = new Application();
 
-         Account account = application.Authenticate("Administrator", "testar");
+         var account = application.Authenticate("Administrator", "testar");
 
          if (account == null)
             account = application.Authenticate("Administrator", "");
@@ -49,14 +40,14 @@ namespace RegressionTests.Shared
 
       public void RemoveAllRoutes()
       {
-         Routes routes = _settings.Routes;
+         var routes = _settings.Routes;
          while (routes.Count > 0)
             routes[0].Delete();
       }
 
       public static string GethMailServerCOMIPaddress()
       {
-         IPAddress[] addresses = Dns.GetHostEntry("mail.hmailserver.com").AddressList;
+         var addresses = Dns.GetHostEntry("mail.hmailserver.com").AddressList;
 
          return addresses[0].ToString();
       }
@@ -64,9 +55,9 @@ namespace RegressionTests.Shared
 
       public Domain PerformBasicSetup()
       {
-         bool restartRequired = false;
+         var restartRequired = false;
 
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
+         var domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
 
          _settings.TCPIPPorts.SetDefault();
 
@@ -89,6 +80,9 @@ namespace RegressionTests.Shared
             _settings.TCPIPThreads = 15;
             restartRequired = true;
          }
+
+         if (!string.IsNullOrEmpty(_settings.WelcomePOP3))
+            _settings.WelcomePOP3 = string.Empty;
 
          if (_settings.AutoBanOnLogonFailure)
             _settings.AutoBanOnLogonFailure = false;
@@ -138,6 +132,9 @@ namespace RegressionTests.Shared
          if (_settings.IMAPACLEnabled != true)
             _settings.IMAPACLEnabled = true;
 
+         if (_settings.CreateDefaultSpecialUseFoldersEnabled)
+            _settings.CreateDefaultSpecialUseFoldersEnabled = false;
+
          if (_settings.MaxMessageSize != 20480)
             _settings.MaxMessageSize = 20480;
 
@@ -151,8 +148,6 @@ namespace RegressionTests.Shared
             _settings.IMAPSASLPlainEnabled = false;
          if (_settings.IMAPSASLInitialResponseEnabled)
             _settings.IMAPSASLInitialResponseEnabled = false;
-         if (_settings.IMAPAuthAllowPlainText)
-            _settings.IMAPAuthAllowPlainText = false;
          if (!string.IsNullOrEmpty(_settings.IMAPMasterUser))
             _settings.IMAPMasterUser = string.Empty;
 
@@ -189,12 +184,12 @@ namespace RegressionTests.Shared
 
          if (!_settings.TlsVersion13Enabled)
          {
-             _settings.TlsVersion13Enabled = true;
-             restartRequired = true;
+            _settings.TlsVersion13Enabled = true;
+            restartRequired = true;
          }
 
 
-         hMailServer.AntiVirus antiVirus = _settings.AntiVirus;
+         var antiVirus = _settings.AntiVirus;
 
          if (antiVirus.ClamAVEnabled)
             antiVirus.ClamAVEnabled = false;
@@ -215,18 +210,17 @@ namespace RegressionTests.Shared
          if (application.ServerState == eServerState.hStateStopped)
             application.Start();
          else if (application.ServerState == eServerState.hStateRunning)
-         {
             if (restartRequired)
             {
                application.Stop();
                application.Start();
             }
-         }
+
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
 
          return domain;
       }
-	  
+
       private string GetCipherList()
       {
          return
@@ -238,8 +232,8 @@ namespace RegressionTests.Shared
       {
          var antiVirusSettings = _settings.AntiVirus;
 
-         bool blockExists = false;
-         for (int i = 0; i < antiVirusSettings.BlockedAttachments.Count; i++)
+         var blockExists = false;
+         for (var i = 0; i < antiVirusSettings.BlockedAttachments.Count; i++)
          {
             var item = antiVirusSettings.BlockedAttachments[i];
 
@@ -262,7 +256,7 @@ namespace RegressionTests.Shared
 
       private void EnableLogging(bool enable)
       {
-         Logging logging = _settings.Logging;
+         var logging = _settings.Logging;
 
          if (logging.AWStatsEnabled != enable)
             logging.AWStatsEnabled = enable;
@@ -298,18 +292,18 @@ namespace RegressionTests.Shared
 
       private void RemoveAllSharedFolders()
       {
-         IMAPFolders folders = _settings.PublicFolders;
+         var folders = _settings.PublicFolders;
          while (folders.Count > 0)
             folders.DeleteByDBID(folders[0].ID);
 
-         string publicFolderPath = Path.Combine(_settings.Directories.DataDirectory, "#Public");
+         var publicFolderPath = Path.Combine(_settings.Directories.DataDirectory, "#Public");
          if (Directory.Exists(publicFolderPath))
             Directory.Delete(publicFolderPath, true);
       }
 
       private void RemoveAllGroups()
       {
-         Groups groups = _settings.Groups;
+         var groups = _settings.Groups;
          while (groups.Count > 0)
             groups.DeleteByDBID(groups[0].ID);
       }
@@ -317,7 +311,7 @@ namespace RegressionTests.Shared
 
       private void ClearGreyListingWhiteAddresses()
       {
-         GreyListingWhiteAddresses addresses = _settings.AntiSpam.GreyListingWhiteAddresses;
+         var addresses = _settings.AntiSpam.GreyListingWhiteAddresses;
          while (addresses.Count > 0)
             addresses.DeleteByDBID(addresses[0].ID);
       }
@@ -325,18 +319,18 @@ namespace RegressionTests.Shared
 
       public static void SendMessagesInQueue()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         DeliveryQueue queue = application.GlobalObjects.DeliveryQueue;
-         Status status = application.Status;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var queue = application.GlobalObjects.DeliveryQueue;
+         var status = application.Status;
 
-         string[] messages = status.UndeliveredMessages.Split('\n');
-         foreach (string message in messages)
+         var messages = status.UndeliveredMessages.Split('\n');
+         foreach (var message in messages)
          {
             if (message.Length < 10)
                continue;
 
-            string[] info = message.Split('\t');
-            Int64 id = Convert.ToInt64(info[0]);
+            var info = message.Split('\t');
+            var id = Convert.ToInt64(info[0]);
 
             queue.ResetDeliveryTime(id);
          }
@@ -347,18 +341,18 @@ namespace RegressionTests.Shared
 
       public static void DeleteMessagesInQueue()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         DeliveryQueue queue = application.GlobalObjects.DeliveryQueue;
-         Status status = application.Status;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var queue = application.GlobalObjects.DeliveryQueue;
+         var status = application.Status;
 
-         string[] messages = status.UndeliveredMessages.Split('\n');
-         foreach (string message in messages)
+         var messages = status.UndeliveredMessages.Split('\n');
+         foreach (var message in messages)
          {
             if (message.Length < 10)
                continue;
 
-            string[] info = message.Split('\t');
-            int id = Convert.ToInt32(info[0]);
+            var info = message.Split('\t');
+            var id = Convert.ToInt32(info[0]);
 
             queue.Remove(id);
          }
@@ -368,27 +362,27 @@ namespace RegressionTests.Shared
 
       public static int GetNumberOfMessagesInDeliveryQueue()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         DeliveryQueue queue = application.GlobalObjects.DeliveryQueue;
-         Status status = application.Status;
+         var queue = application.GlobalObjects.DeliveryQueue;
+         var status = application.Status;
 
-         string messages = status.UndeliveredMessages;
+         var messages = status.UndeliveredMessages;
 
          if (messages.Length < 4)
             return 0;
 
-         string[] messageList = status.UndeliveredMessages.Split('\n');
+         var messageList = status.UndeliveredMessages.Split('\n');
 
-         int count = 0;
-         foreach (string message in messageList)
+         var count = 0;
+         foreach (var message in messageList)
          {
             if (message.Length < 4)
                continue;
 
-            string recipients = message.Split('\t')[3];
+            var recipients = message.Split('\t')[3];
 
-            string[] recipientList = recipients.Split(',');
+            var recipientList = recipients.Split(',');
 
             count += recipientList.Length;
          }
@@ -409,19 +403,19 @@ namespace RegressionTests.Shared
 
       public void ClearDomains()
       {
-         Domains domains = application.Domains;
+         var domains = application.Domains;
 
-         while (domains.Count 
-            > 0)
+         while (domains.Count
+                > 0)
          {
-            Domain domain = domains[0];
+            var domain = domains[0];
             domain.Delete();
          }
       }
 
       public void DisableSpamProtection()
       {
-         hMailServer.AntiSpam antiSpam = _settings.AntiSpam;
+         var antiSpam = _settings.AntiSpam;
 
          if (antiSpam.SpamMarkThreshold != 10000)
             antiSpam.SpamMarkThreshold = 10000;
@@ -453,6 +447,9 @@ namespace RegressionTests.Shared
          if (antiSpam.UseSPF)
             antiSpam.UseSPF = false;
 
+         if (antiSpam.CheckPTR)
+            antiSpam.CheckPTR = false;
+
          if (antiSpam.MaximumMessageSize != 1024)
             antiSpam.MaximumMessageSize = 1024;
 
@@ -461,9 +458,9 @@ namespace RegressionTests.Shared
 
          antiSpam.WhiteListAddresses.Clear();
 
-         for (int i = 0; i < antiSpam.DNSBlackLists.Count; i++)
+         for (var i = 0; i < antiSpam.DNSBlackLists.Count; i++)
          {
-            DNSBlackList list = antiSpam.DNSBlackLists[i];
+            var list = antiSpam.DNSBlackLists[i];
             if (list.Active)
             {
                list.Active = false;
@@ -471,23 +468,21 @@ namespace RegressionTests.Shared
             }
          }
 
-         DNSBlackLists dnsBlackLists = antiSpam.DNSBlackLists;
+         var dnsBlackLists = antiSpam.DNSBlackLists;
          while (dnsBlackLists.Count > 0)
             dnsBlackLists.DeleteByDBID(dnsBlackLists[0].ID);
 
-         SURBLServers surblServers = antiSpam.SURBLServers;
+         var surblServers = antiSpam.SURBLServers;
 
-         for (int i = surblServers.Count - 1; i >= 0; i--)
-         {
+         for (var i = surblServers.Count - 1; i >= 0; i--)
             if (surblServers[i].DNSHost != "multi.surbl.org")
                surblServers.DeleteByDBID(surblServers[i].ID);
             else
                surblServers[i].Active = false;
-         }
 
          if (surblServers.Count == 0)
          {
-            SURBLServer surblServer = surblServers.Add();
+            var surblServer = surblServers.Add();
             surblServer.Active = false;
             surblServer.DNSHost = "multi.surbl.org";
             surblServer.RejectMessage = "Nope";
@@ -495,7 +490,7 @@ namespace RegressionTests.Shared
             surblServer.Save();
          }
 
-         IncomingRelays incomingRelays = _settings.IncomingRelays;
+         var incomingRelays = _settings.IncomingRelays;
          while (incomingRelays.Count > 0)
             incomingRelays.DeleteByDBID(incomingRelays[0].ID);
 
@@ -506,13 +501,13 @@ namespace RegressionTests.Shared
       {
          ClearDomains();
 
-         Domain domain = AddDomain(application.Domains, "test.com");
+         var domain = AddDomain(application.Domains, "example.test");
          return domain;
       }
 
       public Alias AddAlias(Domain domain, string sName, string sValue)
       {
-         Alias alias = domain.Aliases.Add();
+         var alias = domain.Aliases.Add();
          alias.Name = sName;
          alias.Value = sValue;
          alias.Active = true;
@@ -523,7 +518,7 @@ namespace RegressionTests.Shared
 
       public Group AddGroup(string sName)
       {
-         Group group = GetApp().Settings.Groups.Add();
+         var group = GetApp().Settings.Groups.Add();
          group.Name = sName;
          group.Save();
          return group;
@@ -531,7 +526,7 @@ namespace RegressionTests.Shared
 
       public GroupMember AddGroupMember(Group group, Account account)
       {
-         GroupMember member = group.Members.Add();
+         var member = group.Members.Add();
          member.AccountID = account.ID;
          member.Save();
 
@@ -546,7 +541,7 @@ namespace RegressionTests.Shared
 
       public Account AddAccount(Accounts accounts, string sAddress, string sPassword)
       {
-         Account account = accounts.Add();
+         var account = accounts.Add();
          account.Address = sAddress;
          account.Password = sPassword;
          account.Active = true;
@@ -557,7 +552,7 @@ namespace RegressionTests.Shared
 
       public Account AddAccount(Domain domain, string sAddress, string sPassword, int maxSize)
       {
-         Account account = domain.Accounts.Add();
+         var account = domain.Accounts.Add();
          account.Address = sAddress;
          account.Password = sPassword;
          account.Active = true;
@@ -570,13 +565,13 @@ namespace RegressionTests.Shared
 
       public Domain AddDomain(string name)
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
          return AddDomain(domains, name);
       }
 
       public Domain AddDomain(Domains domains, string sName)
       {
-         Domain domain = domains.Add();
+         var domain = domains.Add();
          domain.Name = sName;
          domain.Active = true;
          domain.Save();
@@ -586,15 +581,15 @@ namespace RegressionTests.Shared
 
       public DistributionList AddDistributionList(Domain domain, string sAddress, List<string> recipients)
       {
-         DistributionList list = domain.DistributionLists.Add();
+         var list = domain.DistributionLists.Add();
          list.Active = true;
          list.Address = sAddress;
          list.Save();
 
          // Add recipients
-         foreach (string recipientAddress in recipients)
+         foreach (var recipientAddress in recipients)
          {
-            DistributionListRecipient recipient = list.Recipients.Add();
+            var recipient = list.Recipients.Add();
             recipient.RecipientAddress = recipientAddress;
             recipient.Save();
 
@@ -606,7 +601,7 @@ namespace RegressionTests.Shared
 
       public static string UniqueString()
       {
-         string s = Guid.NewGuid().ToString();
+         var s = Guid.NewGuid().ToString();
          s = s.Replace("{", "");
          s = s.Replace("}", "");
          s = s.Replace("-", "");
@@ -614,26 +609,23 @@ namespace RegressionTests.Shared
          return s;
       }
 
-      
+
       public static string ReadExistingTextFile(string fileName)
       {
          CustomAsserts.AssertFileExists(fileName, false);
 
-         for (int i = 1; i <= 100; i++)
+         for (var i = 1; i <= 100; i++)
          {
             try
             {
                var stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                var reader = new StreamReader(stream);
-               string contents = reader.ReadToEnd();
+               var contents = reader.ReadToEnd();
                reader.Close();
                stream.Close();
 
                // Check that some data has actually been read.
-               if (!string.IsNullOrEmpty(contents))
-               {
-                  return contents;
-               }
+               if (!string.IsNullOrEmpty(contents)) return contents;
             }
             catch (Exception ex)
             {
@@ -649,30 +641,46 @@ namespace RegressionTests.Shared
 
       internal static IPAddress GetLocalIpAddress()
       {
-         // Connect to another local address.
-         IPHostEntry iphostentry = Dns.GetHostEntry(Dns.GetHostName());
+         var allAddresses = new StringBuilder();
 
-         foreach (IPAddress ipaddress in iphostentry.AddressList)
+         foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
          {
-            if (ipaddress.AddressFamily == AddressFamily.InterNetwork)
+            if (ni.OperationalStatus != OperationalStatus.Up)
+               continue;
+
+            foreach (UnicastIPAddressInformation ipInfo in ni.GetIPProperties().UnicastAddresses)
             {
-               if (ipaddress.ToString().Contains("192.168."))
+               IPAddress ip = ipInfo.Address;
+               allAddresses.AppendLine($"Family: {ip.AddressFamily}, Address: {ip}");
+
+               if (ip.AddressFamily == AddressFamily.InterNetwork)
                {
-                  return ipaddress;
+                  // Example: Only private networks
+                  if (IsPrivateIp(ip))
+                     return ip;
                }
             }
          }
 
-         Assert.Fail("No local internet address found.");
+         Assert.Fail($"No local internet address found. Addresses: {allAddresses}");
          return null;
+      }
+
+      private static bool IsPrivateIp(IPAddress ip)
+      {
+         byte[] bytes = ip.GetAddressBytes();
+         return
+            (bytes[0] == 10) ||
+            (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+            (bytes[0] == 192 && bytes[1] == 168);
       }
 
       public static string GetResource(string resourceName)
       {
-         Assembly assembly = Assembly.GetExecutingAssembly();
+         var assembly = Assembly.GetExecutingAssembly();
          TextReader textReader =
             new StreamReader(assembly.GetManifestResourceStream("RegressionTests." + resourceName));
-         string result = textReader.ReadToEnd();
+         var result = textReader.ReadToEnd();
          textReader.Close();
          return result;
       }
@@ -680,7 +688,7 @@ namespace RegressionTests.Shared
 
       public static string Escape(string input)
       {
-         string escapedValue = input;
+         var escapedValue = input;
 
          switch (SingletonProvider<TestSetup>.Instance.GetApp().Database.DatabaseType)
          {
@@ -702,7 +710,7 @@ namespace RegressionTests.Shared
       public static string CreateLargeDummyMailBody()
       {
          var sb = new StringBuilder();
-         for (int i = 0; i < 10000; i++)
+         for (var i = 0; i < 10000; i++)
             sb.AppendLine("0123456789012345678901234567890123456789012345678901234567890123456789");
 
          return sb.ToString();
@@ -715,12 +723,13 @@ namespace RegressionTests.Shared
       }
 
 
-      internal static Route AddRoutePointingAtLocalhost(int numberOfTries, int port, bool treatSecurityAsLocal, eConnectionSecurity connectionSecurity)
+      internal static Route AddRoutePointingAtLocalhost(int numberOfTries, int port, bool treatSecurityAsLocal,
+         eConnectionSecurity connectionSecurity)
       {
          // Add a route pointing at localhost
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
 
-         Route route = settings.Routes.Add();
+         var route = settings.Routes.Add();
          route.DomainName = "dummy-example.com";
          route.TargetSMTPHost = "127.0.0.1";
          route.TargetSMTPPort = port;
@@ -742,7 +751,7 @@ namespace RegressionTests.Shared
       public static Route AddRoutePointingAtLocalhostMultipleHosts(int numberOfTries, int port)
       {
          // Add a route pointing at localhost
-         Route route = AddRoutePointingAtLocalhost(numberOfTries, port, false);
+         var route = AddRoutePointingAtLocalhost(numberOfTries, port, false);
          route.DomainName = "dummy-example.com";
          route.TargetSMTPHost = "127.0.0.1|127.0.0.1";
          route.TargetSMTPPort = port;
@@ -752,6 +761,5 @@ namespace RegressionTests.Shared
 
          return route;
       }
-
    }
 }

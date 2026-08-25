@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.ServiceProcess;
-using System.Text;
 using System.Threading;
 using hMailServer;
 using NUnit.Framework;
@@ -23,26 +22,24 @@ namespace RegressionTests.Infrastructure
 
       public static void AssertSessionCount(eSessionType sessionType, int expectedCount)
       {
-         Application application = GetApp();
+         var application = GetApp();
 
          RetryHelper.TryAction(TimeSpan.FromSeconds(10), () =>
          {
-            int count = application.Status.get_SessionCount(sessionType);
+            var count = application.Status.get_SessionCount(sessionType);
 
             if (count != expectedCount)
                return;
 
             RetryableAssert.AreEqual(expectedCount, count);
-
          });
-
       }
 
       public static void AssertBounceMessageExistsInQueue(string bounceTo)
       {
          var application = GetApp();
-         Status status = application.Status;
-         for (int i = 0; i < 100; i++)
+         var status = application.Status;
+         for (var i = 0; i < 100; i++)
          {
             if (status.UndeliveredMessages.Length == 0 || status.UndeliveredMessages.Contains("\t" + bounceTo))
                return;
@@ -57,10 +54,10 @@ namespace RegressionTests.Infrastructure
       {
          var application = GetApp();
          var settings = application.Settings;
-         Logging logging = settings.Logging;
-         for (int i = 0; i < 40; i++)
+         var logging = settings.Logging;
+         for (var i = 0; i < 40; i++)
          {
-            string contents = logging.LiveLog;
+            var contents = logging.LiveLog;
             if (contents.Length > 0)
                return contents;
 
@@ -72,13 +69,11 @@ namespace RegressionTests.Infrastructure
 
       public static void AssertSpamAssassinIsRunning()
       {
-         Process[] processlist = Process.GetProcesses();
+         var processlist = Process.GetProcesses();
 
-         foreach (Process theprocess in processlist)
-         {
+         foreach (var theprocess in processlist)
             if (theprocess.ProcessName == "spamd")
                return;
-         }
 
          // Check if we can launch it...
          try
@@ -94,7 +89,7 @@ namespace RegressionTests.Infrastructure
 
       public static void AssertDeleteFile(string file)
       {
-         for (int i = 0; i <= 400; i++)
+         for (var i = 0; i <= 400; i++)
          {
             if (!File.Exists(file))
                return;
@@ -109,6 +104,7 @@ namespace RegressionTests.Infrastructure
                if (i == 400)
                   throw e;
             }
+
             Thread.Sleep(25);
          }
       }
@@ -123,7 +119,7 @@ namespace RegressionTests.Infrastructure
          if (forceSend)
             TestSetup.SendMessagesInQueue();
 
-         DateTime timeoutTime = DateTime.UtcNow.AddSeconds(20);
+         var timeoutTime = DateTime.UtcNow.AddSeconds(20);
 
          while (DateTime.UtcNow < timeoutTime)
          {
@@ -135,13 +131,13 @@ namespace RegressionTests.Infrastructure
             Thread.Sleep(TimeSpan.FromMilliseconds(100));
          }
 
-         int currentCount = TestSetup.GetNumberOfMessagesInDeliveryQueue();
+         var currentCount = TestSetup.GetNumberOfMessagesInDeliveryQueue();
          if (currentCount == count)
             return;
 
          TestSetup.DeleteMessagesInQueue();
 
-         string message = string.Format(
+         var message = string.Format(
             "Message queue does not contain correct number of messages. Actual: {0}, Expected: {1}",
             currentCount, count);
          Assert.Fail(message);
@@ -149,13 +145,11 @@ namespace RegressionTests.Infrastructure
 
       public static void AssertClamDRunning()
       {
-         Process[] processlist = Process.GetProcesses();
+         var processlist = Process.GetProcesses();
 
-         foreach (Process theprocess in processlist)
-         {
+         foreach (var theprocess in processlist)
             if (theprocess.ProcessName == "clamd")
                return;
-         }
 
          // Check if we can launch it...
          var startInfo = new ProcessStartInfo();
@@ -167,7 +161,7 @@ namespace RegressionTests.Infrastructure
             Process.Start(startInfo);
 
             // Wait for clamav to start up.
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                var sock = new TcpConnection();
                if (sock.Connect(3310))
@@ -185,7 +179,7 @@ namespace RegressionTests.Infrastructure
 
       public static Message AssertGetFirstMessage(Account account, string folderName)
       {
-         IMAPFolder folder = account.IMAPFolders.get_ItemByName(folderName);
+         var folder = account.IMAPFolders.get_ItemByName(folderName);
 
          // Wait for message to appear.
          AssertFolderMessageCount(folder, 1);
@@ -197,13 +191,11 @@ namespace RegressionTests.Infrastructure
       public static void AssertFolderMessageCount(IMAPFolder folder, int expectedCount)
       {
          if (expectedCount == 0)
-         {
             // just in case.
             AssertRecipientsInDeliveryQueue(0);
-         }
 
-         int currentCount = 0;
-         int timeout = 100;
+         var currentCount = 0;
+         var timeout = 100;
          while (timeout > 0)
          {
             currentCount = folder.Messages.Count;
@@ -215,25 +207,22 @@ namespace RegressionTests.Infrastructure
             Thread.Sleep(100);
          }
 
-         string error = "Wrong number of messages in mailbox " + folder.Name;
+         var error = "Wrong number of messages in mailbox " + folder.Name;
          Assert.Fail(error);
       }
 
       public static Message AssertRetrieveFirstMessage(IMAPFolder folder)
       {
-         int timeout = 100;
+         var timeout = 100;
          while (timeout > 0)
          {
-            if (folder.Messages.Count > 0)
-            {
-               return folder.Messages[0];
-            }
+            if (folder.Messages.Count > 0) return folder.Messages[0];
 
             timeout--;
             Thread.Sleep(100);
          }
 
-         string error = "Could not retrieve message from folder";
+         var error = "Could not retrieve message from folder";
          Assert.Fail(error);
 
          return null;
@@ -241,7 +230,7 @@ namespace RegressionTests.Infrastructure
 
       public static IMAPFolder AssertFolderExists(IMAPFolders folders, string folderName)
       {
-         int timeout = 100;
+         var timeout = 100;
          while (timeout > 0)
          {
             try
@@ -256,14 +245,14 @@ namespace RegressionTests.Infrastructure
             Thread.Sleep(100);
          }
 
-         string error = "Folder could not be found " + folderName;
+         var error = "Folder could not be found " + folderName;
          Assert.Fail(error);
          return null;
       }
 
       public static void AssertFileExists(string file, bool delete)
       {
-         int timeout = 100;
+         var timeout = 100;
          while (timeout > 0)
          {
             try
@@ -294,10 +283,9 @@ namespace RegressionTests.Infrastructure
       {
          if (File.Exists(LogHandler.GetErrorLogFileName()))
          {
-            string contents = LogHandler.ReadErrorLog();
+            var contents = LogHandler.ReadErrorLog();
             Assert.Fail(contents);
          }
-
       }
 
       public static void AssertReportedError(string firstContent, params string[] contents)
@@ -310,12 +298,9 @@ namespace RegressionTests.Infrastructure
          {
             RetryHelper.TryAction(TimeSpan.FromSeconds(10), () =>
             {
-               string errorLog = LogHandler.ReadErrorLog();
+               var errorLog = LogHandler.ReadErrorLog();
 
-               foreach (var content in allExpectedContent)
-               {
-                  RetryableAssert.StringContains(content, errorLog);
-               }
+               foreach (var content in allExpectedContent) RetryableAssert.StringContains(content, errorLog);
             });
          }
          finally
@@ -329,26 +314,26 @@ namespace RegressionTests.Infrastructure
          var app = GetApp();
          var settings = app.Settings;
 
-         string domain = account.Address.Substring(account.Address.IndexOf("@") + 1);
-         string mailbox = account.Address.Substring(0, account.Address.IndexOf("@"));
+         var domain = account.Address.Substring(account.Address.IndexOf("@") + 1);
+         var mailbox = account.Address.Substring(0, account.Address.IndexOf("@"));
 
-         string domainDir = Path.Combine(settings.Directories.DataDirectory, domain);
-         string userDir = Path.Combine(domainDir, mailbox);
+         var domainDir = Path.Combine(settings.Directories.DataDirectory, domain);
+         var userDir = Path.Combine(domainDir, mailbox);
 
          AssertFilesInDirectory(userDir, expectedFileCount);
       }
 
       public static void AssertFilesInDirectory(string directory, int expectedFileCount)
       {
-         int count = 0;
+         var count = 0;
 
          if (Directory.Exists(directory))
          {
-            string[] dirs = Directory.GetDirectories(directory);
+            var dirs = Directory.GetDirectories(directory);
 
-            foreach (string dir in dirs)
+            foreach (var dir in dirs)
             {
-               string[] files = Directory.GetFiles(dir);
+               var files = Directory.GetFiles(dir);
                count += files.Length;
             }
          }
@@ -369,11 +354,9 @@ namespace RegressionTests.Infrastructure
          }
 
          if (!exceptionThrown)
-         {
             throw new InvalidOperationException(
-                String.Format("An exception of type {0} was expected, but not thrown", typeof(T))
-                );
-         }
+               string.Format("An exception of type {0} was expected, but not thrown", typeof(T))
+            );
       }
    }
 }

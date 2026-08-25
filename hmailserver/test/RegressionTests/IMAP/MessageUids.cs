@@ -3,10 +3,10 @@
 
 using System;
 using System.IO;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.IMAP
 {
@@ -15,18 +15,18 @@ namespace RegressionTests.IMAP
    {
       private void CreateMessageModificationRule(hMailServer.Rules ruleContainer)
       {
-         Rule rule = ruleContainer.Add();
+         var rule = ruleContainer.Add();
          rule.Name = "Criteria test";
          rule.Active = true;
 
-         RuleCriteria ruleCriteria = rule.Criterias.Add();
+         var ruleCriteria = rule.Criterias.Add();
          ruleCriteria.UsePredefined = true;
          ruleCriteria.PredefinedField = eRulePredefinedField.eFTMessageSize;
          ruleCriteria.MatchType = eRuleMatchType.eMTGreaterThan;
          ruleCriteria.MatchValue = "0";
          ruleCriteria.Save();
 
-         RuleAction ruleAction = rule.Actions.Add();
+         var ruleAction = rule.Actions.Add();
          ruleAction.Type = eRuleActionType.eRARunScriptFunction;
          ruleAction.ScriptFunction = "ModifyMessage";
          ruleAction.Save();
@@ -34,28 +34,28 @@ namespace RegressionTests.IMAP
          rule.Save();
 
          File.WriteAllText(_settings.Scripting.CurrentScriptFile,
-                           "Sub ModifyMessage(message)" + Environment.NewLine +
-                           "message.Subject = \"[Spam] \" + CStr(message.Subject)" + Environment.NewLine +
-                           "message.Save" + Environment.NewLine +
-                           "End Sub");
+            "Sub ModifyMessage(message)" + Environment.NewLine +
+            "message.Subject = \"[Spam] \" + CStr(message.Subject)" + Environment.NewLine +
+            "message.Save" + Environment.NewLine +
+            "End Sub");
 
          _settings.Scripting.Reload();
       }
 
       private void CreateMoveRule(hMailServer.Rules ruleContainer, string foldername)
       {
-         Rule rule = ruleContainer.Add();
+         var rule = ruleContainer.Add();
          rule.Name = "Criteria test";
          rule.Active = true;
 
-         RuleCriteria ruleCriteria = rule.Criterias.Add();
+         var ruleCriteria = rule.Criterias.Add();
          ruleCriteria.UsePredefined = true;
          ruleCriteria.PredefinedField = eRulePredefinedField.eFTMessageSize;
          ruleCriteria.MatchType = eRuleMatchType.eMTGreaterThan;
          ruleCriteria.MatchValue = "0";
          ruleCriteria.Save();
 
-         RuleAction ruleAction = rule.Actions.Add();
+         var ruleAction = rule.Actions.Add();
          ruleAction.Type = eRuleActionType.eRAMoveToImapFolder;
          ruleAction.IMAPFolder = foldername;
          ruleAction.Save();
@@ -67,13 +67,13 @@ namespace RegressionTests.IMAP
       [Description("Confirm that new messages receive new UIDs")]
       public void TestBasicIncrements()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
 
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
 
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
@@ -95,13 +95,13 @@ namespace RegressionTests.IMAP
       [Description("Confirm that deletion of messages does not effect UID sequence")]
       public void TestBasicIncrementsWithDeletion()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
 
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
 
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
@@ -126,13 +126,13 @@ namespace RegressionTests.IMAP
       [Description("Confirm that moving a message to a new folder generates an UID specific to that folder.")]
       public void TestMoveMessageWithAccountLevelRule()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          // First deliver two messages to the inbox.
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
 
@@ -149,7 +149,7 @@ namespace RegressionTests.IMAP
          // Wait for the message to arrive.
          CustomAsserts.AssertFolderExists(testAccount.IMAPFolders, "TestFolder");
 
-         IMAPFolder testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
+         var testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
 
          // Since the message is placed in a new folder, it should receive a unique UID.
          CustomAsserts.AssertFolderMessageCount(testFolder, 1);
@@ -161,13 +161,13 @@ namespace RegressionTests.IMAP
       [Description("Confirm that moving a message to a new folder generates an UID specific to that folder.")]
       public void TestMoveMessageWithGlobalRule()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          // First deliver two messages to the inbox.
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
 
@@ -184,7 +184,7 @@ namespace RegressionTests.IMAP
          // Wait for the message to arrive.
          CustomAsserts.AssertFolderExists(testAccount.IMAPFolders, "TestFolder");
 
-         IMAPFolder testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
+         var testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
          CustomAsserts.AssertFolderMessageCount(testFolder, 1);
 
          // Since the message is placed in a new folder, it should receive a unique UID.
@@ -196,14 +196,14 @@ namespace RegressionTests.IMAP
       [Test]
       [Description("Issue 267, Invalid message UID generated. " +
                    " Confirm that moving a message to a new folder generates an UID specific to that folder, even if the message is saved using an account rule."
-         )]
+      )]
       public void TestSaveMessageWithScriptAndMoveMessageWithAccountRule()
       {
          _settings.Scripting.Enabled = true;
          _settings.Scripting.Reload();
 
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          var sim = new ImapClientSimulator();
          Assert.IsTrue(sim.ConnectAndLogon(testAccount.Address, "test"));
@@ -211,7 +211,7 @@ namespace RegressionTests.IMAP
          // First deliver two messages to the inbox.
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
          Assert.IsTrue(sim.Status("INBOX", "UIDNEXT").Contains("UIDNEXT 2"));
@@ -231,7 +231,7 @@ namespace RegressionTests.IMAP
          // Wait for the message to arrive.
          CustomAsserts.AssertFolderExists(testAccount.IMAPFolders, "TestFolder");
 
-         IMAPFolder testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
+         var testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
          CustomAsserts.AssertFolderMessageCount(testFolder, 1);
 
          // The UID for the inbox should be the same as before.
@@ -247,13 +247,13 @@ namespace RegressionTests.IMAP
       [Test]
       [Description("Issue 267, Invalid message UID generated. " +
                    " Confirm that moving a message to a new folder generates an UID specific to that folder, even if the message is saved using an account rule."
-         )]
+      )]
       public void TestSaveMessageWithScriptAndMoveMessageWithGlobalRule()
       {
          _settings.Scripting.Enabled = true;
 
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@test.com",
-                                                                                "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "Test'Account@example.test",
+            "test");
 
          var sim = new ImapClientSimulator();
          Assert.IsTrue(sim.ConnectAndLogon(testAccount.Address, "test"));
@@ -261,7 +261,7 @@ namespace RegressionTests.IMAP
          // First deliver two messages to the inbox.
          SmtpClientSimulator.StaticSend(testAccount.Address, testAccount.Address, "Test", "Test");
          Pop3ClientSimulator.AssertMessageCount(testAccount.Address, "test", 1);
-         IMAPFolder inboxFolder = testAccount.IMAPFolders[0];
+         var inboxFolder = testAccount.IMAPFolders[0];
          Assert.AreEqual(1, inboxFolder.CurrentUID);
          Assert.AreEqual(1, inboxFolder.Messages[0].UID);
          Assert.IsTrue(sim.Status("INBOX", "UIDNEXT").Contains("UIDNEXT 2"));
@@ -281,14 +281,14 @@ namespace RegressionTests.IMAP
 
          // Wait for the message to arrive.
          CustomAsserts.AssertFolderExists(testAccount.IMAPFolders, "TestFolder");
-         IMAPFolder testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
+         var testFolder = testAccount.IMAPFolders.get_ItemByName("TestFolder");
          CustomAsserts.AssertFolderMessageCount(testFolder, 1);
 
          // Inbox UID should not have changed since nothing has been added to the inbox.
          Assert.IsTrue(sim.Status("INBOX", "UIDNEXT").Contains("UIDNEXT 3"));
 
          // Since the message is placed in a new folder, it should receive a unique UID.
-         string status = sim.Status("TestFolder", "UIDNEXT");
+         var status = sim.Status("TestFolder", "UIDNEXT");
          Assert.IsTrue(status.Contains("UIDNEXT 2"), status);
          Assert.AreEqual(1, testFolder.CurrentUID);
          Assert.AreEqual(1, testFolder.Messages[0].UID);

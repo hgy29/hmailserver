@@ -1,24 +1,20 @@
-﻿// Copyright (c) 2010 Martin Knafve / hMailServer.com.  
+// Copyright (c) 2010 Martin Knafve / hMailServer.com.
 // http://www.hmailserver.com
 
 using System;
-using System.Net;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.AntiSpam
 {
    [TestFixture]
    internal class WhiteListing : TestFixtureBase
    {
-      #region Setup/Teardown
-
-      private const string SurblTestPointBody =
-         "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-";
-
       [SetUp]
       public new void SetUp()
       {
@@ -33,24 +29,25 @@ namespace RegressionTests.AntiSpam
          _antiSpam.PrependSubject = true;
          _antiSpam.PrependSubjectText = "ThisIsSpam";
 
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "whitelist@test.com", "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "whitelist@example.test", "test");
       }
 
-      #endregion
+      private const string SurblTestPointBody =
+         "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-";
 
       private hMailServer.AntiSpam _antiSpam;
 
       [Test]
       public void TestEnabled()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
-         WhiteListAddress obAddress = obAddresses.Add();
+         var addresses = _antiSpam.WhiteListAddresses;
+         var address = addresses.Add();
 
-         obAddress.EmailAddress = "whitelist@microsoft.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         address.EmailAddress = "whitelist@microsoft.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
          // Enable SURBL.
          var surblServer = _antiSpam.SURBLServers[0];
@@ -59,45 +56,46 @@ namespace RegressionTests.AntiSpam
          surblServer.Save();
 
          // Send a messages to this account.
-         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
 
-         obAddresses.DeleteByDBID(obAddress.ID);
+         addresses.DeleteByDBID(address.ID);
 
          // Check that it's detected as spam again.
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@microsoft.com",
+            "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
       public void TestFormatVariations()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
+         var addresses = _antiSpam.WhiteListAddresses;
 
-         WhiteListAddress obAddress = obAddresses.Add();
+         var address = addresses.Add();
 
-         string address = @"A%B/C\D_@microsoft.com";
-         obAddress.EmailAddress = address;
-         Assert.AreEqual(address, obAddress.EmailAddress);
+         var emailAddress = @"A%B/C\D_@microsoft.com";
+         address.EmailAddress = emailAddress;
+         Assert.AreEqual(emailAddress, address.EmailAddress);
 
-         address = @"\%%%__\_@microsoft.com";
-         obAddress.EmailAddress = address;
-         Assert.AreEqual(address, obAddress.EmailAddress);
+         emailAddress = @"\%%%__\_@microsoft.com";
+         address.EmailAddress = emailAddress;
+         Assert.AreEqual(emailAddress, address.EmailAddress);
       }
 
       [Test]
       public void TestHelo()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
-         WhiteListAddress obAddress = obAddresses.Add();
+         var addresses = _antiSpam.WhiteListAddresses;
+         var address = addresses.Add();
 
-         obAddress.EmailAddress = "whitelist@microsoft.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         address.EmailAddress = "whitelist@microsoft.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
          // Test that we can send spam now.
          // Create a test account
@@ -115,157 +113,162 @@ namespace RegressionTests.AntiSpam
          // Send a messages to this account.
          var smtpClientSimulator = new SmtpClientSimulator();
 
-         smtpClientSimulator.Send("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                  "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         smtpClientSimulator.Send("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
 
-         obAddresses.DeleteByDBID(obAddress.ID);
+         addresses.DeleteByDBID(address.ID);
 
          // Check that it's deteceted as spam again.
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClientSimulator.Send("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                   "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClientSimulator.Send("whitelist@microsoft.com",
+            "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
 
       [Test]
       public void TestWildcardEscapedCharacters()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
+         var addresses = _antiSpam.WhiteListAddresses;
 
-         WhiteListAddress obAddress = obAddresses.Add();
-         obAddress.EmailAddress = "white%li_st@microsoft.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = addresses.Add();
+         address.EmailAddress = "white%li_st@microsoft.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Send a messages to this account.
 
-         SmtpClientSimulator.StaticSend("white%li_st@microsoft.com", "whitelist@test.com",
-                                                      "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whiteAlist@micro_soft.com", "whitelist@test.com",
-                                                       "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("white%li_st@microsoft.com", "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whiteAlist@micro_soft.com",
+            "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whiteAlist@microEsoft.com", "whitelist@test.com",
-                                                       "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whiteAlist@microEsoft.com",
+            "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
       public void TestWildcardQuestionMark()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
+         var addresses = _antiSpam.WhiteListAddresses;
 
-         WhiteListAddress obAddress = obAddresses.Add();
-         obAddress.EmailAddress = "whitelist@?icrosoft.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = addresses.Add();
+         address.EmailAddress = "whitelist@?icrosoft.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Send a messages to this account.
-         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@icrosoft.com", "whitelist@test.com", "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
-         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@icrosoft.com", "whitelist@test.com", "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@icrosoft.com",
+            "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@icrosoft.com",
+            "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 2);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 2);
       }
 
 
       [Test]
       public void TestWildcardSingleQuote()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
+         var addresses = _antiSpam.WhiteListAddresses;
 
-         WhiteListAddress obAddress = obAddresses.Add();
-         obAddress.EmailAddress = "white'list@example.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = addresses.Add();
+         address.EmailAddress = "white'list@example.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Send a messages to this account.
-         SmtpClientSimulator.StaticSend("white'list@example.com", "whitelist@test.com",
-                                                      "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@micro_soft.com", "whitelist@test.com",
-                                                       "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("white'list@example.com", "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("whitelist@micro_soft.com",
+            "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
       public void TestWildcardStar()
       {
-         WhiteListAddresses obAddresses = _antiSpam.WhiteListAddresses;
+         var addresses = _antiSpam.WhiteListAddresses;
 
-         WhiteListAddress obAddress = obAddresses.Add();
-         obAddress.EmailAddress = "white*@microsoft.com";
-         obAddress.LowerIPAddress = "0.0.0.0";
-         obAddress.UpperIPAddress = "255.255.255.255";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = addresses.Add();
+         address.EmailAddress = "white*@microsoft.com";
+         address.LowerIPAddress = "0.0.0.0";
+         address.UpperIPAddress = "255.255.255.255";
+         address.Description = "Test";
+         address.Save();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Send a messages to this account.
-         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("blacklist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
-         SmtpClientSimulator.StaticSend("whitesomething@microsoft.com", "whitelist@test.com",
-                                                      "SURBL-Match",
-                                                      "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("blacksomething@microsoft.com", "whitelist@test.com",
-                                                       "SURBL-Match",
-                                                       "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("blacklist@microsoft.com",
+            "whitelist@example.test", "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
+         SmtpClientSimulator.StaticSend("whitesomething@microsoft.com", "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-");
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend(
+            "blacksomething@microsoft.com", "whitelist@example.test",
+            "SURBL-Match",
+            "This is a test message with a SURBL url: -> http://surbl-org-permanent-test-point.com/ <-"));
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 2);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 2);
       }
 
       [Test]
       public void TestWhitelistSpecificIPv6Address()
       {
-         var addresses = GetAllLocalAddresses(System.Net.Sockets.AddressFamily.InterNetworkV6);
+         var addresses = GetAllLocalAddresses(AddressFamily.InterNetworkV6);
 
-         if (addresses.Length == 0)
-         {
-            Assert.Inconclusive("IPv6 not available.");
-         }
+         if (addresses.Length == 0) Assert.Inconclusive("IPv6 not available.");
 
          var firstAddress = addresses[0];
 
@@ -297,41 +300,39 @@ namespace RegressionTests.AntiSpam
          _application.Start();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Make sure we are now blacklisted.
          var smtpClient = new SmtpClientSimulator(false, 25, IPAddress.Parse(firstAddress));
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
 
          // White list all IPv6 addresses
-         foreach (var address in addresses)
+         foreach (var ip in addresses)
          {
-            var obAddress = _antiSpam.WhiteListAddresses.Add();
-            obAddress.EmailAddress = "*";
-            obAddress.LowerIPAddress = address;
-            obAddress.UpperIPAddress = address;
-            obAddress.Description = "Test";
-            obAddress.Save();
+            var address = _antiSpam.WhiteListAddresses.Add();
+            address.EmailAddress = "*";
+            address.LowerIPAddress = ip;
+            address.UpperIPAddress = ip;
+            address.Description = "Test";
+            address.Save();
          }
 
          // Make sure we can now send again.
-         smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody);
+         smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody);
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
       public void TestWhitelistOutOfRangeIPv6Address()
       {
-         var addresses = GetAllLocalAddresses(System.Net.Sockets.AddressFamily.InterNetworkV6);
+         var addresses = GetAllLocalAddresses(AddressFamily.InterNetworkV6);
 
-         if (addresses.Length == 0)
-         {
-            Assert.Inconclusive("IPv6 not available.");
-         }
+         if (addresses.Length == 0) Assert.Inconclusive("IPv6 not available.");
 
          var firstAddress = addresses[0];
 
@@ -343,10 +344,10 @@ namespace RegressionTests.AntiSpam
          tcpIpPort.Save();
 
          // Add an IP range for ALL ipv6 source port.
-         foreach (var address in addresses)
+         foreach (var ipAddress in addresses)
          {
             var ipRange = _application.Settings.SecurityRanges.Add();
-            ipRange.Name = "IPv6Range" + address;
+            ipRange.Name = "IPv6Range" + ipAddress;
             ipRange.AllowDeliveryFromLocalToLocal = true;
             ipRange.AllowDeliveryFromLocalToRemote = true;
             ipRange.AllowDeliveryFromRemoteToLocal = true;
@@ -354,8 +355,8 @@ namespace RegressionTests.AntiSpam
             ipRange.AllowSMTPConnections = true;
             ipRange.RequireAuthForDeliveryToLocal = false;
             ipRange.EnableSpamProtection = true;
-            ipRange.LowerIP = address;
-            ipRange.UpperIP = address;
+            ipRange.LowerIP = ipAddress;
+            ipRange.UpperIP = ipAddress;
             ipRange.Save();
          }
 
@@ -363,31 +364,33 @@ namespace RegressionTests.AntiSpam
          _application.Start();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Make sure we are now blacklisted.
          var smtpClient = new SmtpClientSimulator(false, 25, IPAddress.Parse(firstAddress));
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
 
          // White list all IPv6 addresses
-         var obAddress = _antiSpam.WhiteListAddresses.Add();
-         obAddress.EmailAddress = "*";
-         obAddress.LowerIPAddress = "1111::1110";
-         obAddress.UpperIPAddress = "1111::1111";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = _antiSpam.WhiteListAddresses.Add();
+         address.EmailAddress = "*";
+         address.LowerIPAddress = "1111::1110";
+         address.UpperIPAddress = "1111::1111";
+         address.Description = "Test";
+         address.Save();
 
          // Make sure we can now send again.
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
       }
 
       [Test]
       public void TestWhitelistSpecificIpV4Address()
       {
-         var addresses = GetAllLocalAddresses(System.Net.Sockets.AddressFamily.InterNetwork);
+         var addresses = GetAllLocalAddresses(AddressFamily.InterNetwork);
          var firstAddress = addresses[0];
 
          // Enable SURBL.
@@ -398,23 +401,24 @@ namespace RegressionTests.AntiSpam
 
          // Make sure we are now blacklisted.
          var smtpClient = new SmtpClientSimulator(false, 25, IPAddress.Parse(firstAddress));
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
 
          // White list all IPv4 addresses
-         foreach (var address in addresses)
+         foreach (var ip in addresses)
          {
-            var obAddress = _antiSpam.WhiteListAddresses.Add();
-            obAddress.EmailAddress = "*";
-            obAddress.LowerIPAddress = address;
-            obAddress.UpperIPAddress = address;
-            obAddress.Description = "Test";
-            obAddress.Save();
+            var address = _antiSpam.WhiteListAddresses.Add();
+            address.EmailAddress = "*";
+            address.LowerIPAddress = ip;
+            address.UpperIPAddress = ip;
+            address.Description = "Test";
+            address.Save();
          }
 
          // Make sure we can now send again.
-         smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody);
+         smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody);
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
@@ -428,29 +432,28 @@ namespace RegressionTests.AntiSpam
 
          // Make sure we are now blacklisted.
          var smtpClient = new SmtpClientSimulator(false, 25);
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
 
          // White list all IPv4 addresses
-         var obAddress = _antiSpam.WhiteListAddresses.Add();
-         obAddress.EmailAddress = "*";
-         obAddress.LowerIPAddress = "1.1.1.1";
-         obAddress.UpperIPAddress = "1.1.1.5";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = _antiSpam.WhiteListAddresses.Add();
+         address.EmailAddress = "*";
+         address.LowerIPAddress = "1.1.1.1";
+         address.UpperIPAddress = "1.1.1.5";
+         address.Description = "Test";
+         address.Save();
 
          // Make sure we are still blacklisted.
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
       }
 
       [Test]
       public void TestWhitelistAllIPv6Addresses()
       {
-         var addresses = GetAllLocalAddresses(System.Net.Sockets.AddressFamily.InterNetworkV6);
+         var addresses = GetAllLocalAddresses(AddressFamily.InterNetworkV6);
 
-         if (addresses.Length == 0)
-         {
-            Assert.Inconclusive("IPv6 not available.");
-         }
+         if (addresses.Length == 0) Assert.Inconclusive("IPv6 not available.");
 
          var firstAddress = addresses[0];
 
@@ -462,10 +465,10 @@ namespace RegressionTests.AntiSpam
          tcpIpPort.Save();
 
          // Add an IP range for ALL ipv6 source port.
-         foreach (var address in addresses)
+         foreach (var ipAddress in addresses)
          {
             var ipRange = _application.Settings.SecurityRanges.Add();
-            ipRange.Name = "IPv6Range" + address;
+            ipRange.Name = "IPv6Range" + ipAddress;
             ipRange.AllowDeliveryFromLocalToLocal = true;
             ipRange.AllowDeliveryFromLocalToRemote = true;
             ipRange.AllowDeliveryFromRemoteToLocal = true;
@@ -473,8 +476,8 @@ namespace RegressionTests.AntiSpam
             ipRange.AllowSMTPConnections = true;
             ipRange.RequireAuthForDeliveryToLocal = false;
             ipRange.EnableSpamProtection = true;
-            ipRange.LowerIP = address;
-            ipRange.UpperIP = address;
+            ipRange.LowerIP = ipAddress;
+            ipRange.UpperIP = ipAddress;
             ipRange.Save();
          }
 
@@ -482,27 +485,28 @@ namespace RegressionTests.AntiSpam
          _application.Start();
 
          // Enable SURBL.
-         SURBLServer surblServer = _antiSpam.SURBLServers[0];
+         var surblServer = _antiSpam.SURBLServers[0];
          surblServer.Active = true;
          surblServer.Score = 5;
          surblServer.Save();
 
          // Make sure we are now blacklisted.
          var smtpClient = new SmtpClientSimulator(false, 25, IPAddress.Parse(firstAddress));
-         CustomAsserts.Throws<DeliveryFailedException>(() => smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody));
+         CustomAsserts.Throws<DeliveryFailedException>(() =>
+            smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody));
 
          // White list all IPv6 addresses
-         var obAddress = _antiSpam.WhiteListAddresses.Add();
-         obAddress.EmailAddress = "*";
-         obAddress.LowerIPAddress = "::";
-         obAddress.UpperIPAddress = "ffff::ffff";
-         obAddress.Description = "Test";
-         obAddress.Save();
+         var address = _antiSpam.WhiteListAddresses.Add();
+         address.EmailAddress = "*";
+         address.LowerIPAddress = "::";
+         address.UpperIPAddress = "ffff::ffff";
+         address.Description = "Test";
+         address.Save();
 
          // Make sure we can now send again.
-         smtpClient.Send("user@example.com", "whitelist@test.com", "Hello", SurblTestPointBody);
+         smtpClient.Send("user@example.com", "whitelist@example.test", "Hello", SurblTestPointBody);
 
-         Pop3ClientSimulator.AssertMessageCount("whitelist@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("whitelist@example.test", "test", 1);
       }
 
       [Test]
@@ -511,36 +515,34 @@ namespace RegressionTests.AntiSpam
          // Send a messages to this account.
          var smtpClientSimulator = new SmtpClientSimulator();
 
-         smtpClientSimulator.Send("whitelist@microsoft.com", "whitelist@test.com", "SURBL-Match",
-                                  "Message body");
+         smtpClientSimulator.Send("whitelist@microsoft.com", "whitelist@example.test", "SURBL-Match",
+            "Message body");
 
-         var message = Pop3ClientSimulator.AssertGetFirstMessageText("whitelist@test.com", "test");
+         var message = Pop3ClientSimulator.AssertGetFirstMessageText("whitelist@example.test", "test");
          Assert.IsFalse(message.Contains("X-hMailServer-Reason-Score"));
       }
 
 
-      private string[] GetAllLocalAddresses(System.Net.Sockets.AddressFamily family)
+      private string[] GetAllLocalAddresses(AddressFamily family)
       {
-         var result = new List<String>();
+         var result = new List<string>();
 
-         string strHostName = Dns.GetHostName(); ;
+         var strHostName = Dns.GetHostName();
+         ;
          var ipEntry = Dns.GetHostEntry(strHostName);
 
          foreach (var address in ipEntry.AddressList)
-         {
             if (address.AddressFamily == family)
             {
-               string addr = address.ToString();
+               var addr = address.ToString();
 
                if (addr.Contains("%"))
                   result.Add(addr.Substring(0, addr.IndexOf("%", StringComparison.InvariantCulture)));
                else
                   result.Add(addr);
             }
-         }
 
          return result.ToArray();
-
       }
    }
 }

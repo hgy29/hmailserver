@@ -325,6 +325,7 @@ namespace HM
             recipientOK = true;
 
             AddRecipient_(pRecipients, NewRecipient);
+            return;
          }
 
          if (!bIsLocalDomain || pDomain->GetPostmaster().IsEmpty())

@@ -1,9 +1,9 @@
 ﻿using System.IO;
 using System.Text;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.IMAP
 {
@@ -14,17 +14,17 @@ namespace RegressionTests.IMAP
       [Description("Append a message to an account inbox and make sure it's placed in the right location on disk.")]
       public void ConfirmFileAddedToCorrectAccountFolder()
       {
-         TestSetup testSetup = SingletonProvider<TestSetup>.Instance;
-         Account account = testSetup.AddAccount(_domain, "check@test.com", "test");
+         var testSetup = SingletonProvider<TestSetup>.Instance;
+         var account = testSetup.AddAccount(_domain, "check@example.test", "test");
          var simulator = new ImapClientSimulator();
 
          // Confirm that the public folder is empty before we start our test.
-         string publicDir = GetPublicDirectory();
+         var publicDir = GetPublicDirectory();
          CustomAsserts.AssertFilesInDirectory(publicDir, 0);
 
          // Add a message to the inbox.
          simulator.Connect();
-         simulator.LogonWithLiteral("check@test.com", "test");
+         simulator.LogonWithLiteral("check@example.test", "test");
          simulator.SendSingleCommandWithLiteral("A01 APPEND INBOX {4}", "ABCD");
 
          // Confirm it exists in the IMAP folder.
@@ -42,20 +42,20 @@ namespace RegressionTests.IMAP
       [Description("Append a message to an public folder and make sure it's placed in the right location on disk.")]
       public void ConfirmFileAddedToCorrectPublicFolder()
       {
-         TestSetup testSetup = SingletonProvider<TestSetup>.Instance;
-         Account account = testSetup.AddAccount(_domain, "check@test.com", "test");
+         var testSetup = SingletonProvider<TestSetup>.Instance;
+         var account = testSetup.AddAccount(_domain, "check@example.test", "test");
          var simulator = new ImapClientSimulator();
 
          // Confirm that the public folder is empty before we start our test.
-         string publicDir = GetPublicDirectory();
+         var publicDir = GetPublicDirectory();
          CustomAsserts.AssertFilesInDirectory(publicDir, 0);
 
-         IMAPFolders folders = _application.Settings.PublicFolders;
-         IMAPFolder folder = folders.Add("Share");
+         var folders = _application.Settings.PublicFolders;
+         var folder = folders.Add("Share");
          folder.Save();
 
          // Give everyone access to the folder.
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionType = eACLPermissionType.ePermissionTypeAnyone;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.set_Permission(eACLPermission.ePermissionRead, true);
@@ -64,7 +64,7 @@ namespace RegressionTests.IMAP
 
          // Add the message to the public folder.
          simulator.Connect();
-         simulator.LogonWithLiteral("check@test.com", "test");
+         simulator.LogonWithLiteral("check@example.test", "test");
          simulator.SendSingleCommandWithLiteral("A01 APPEND #Public.Share {4}", "ABCD");
 
          // Confirm that the message exists in the public folder and not in the inbox.
@@ -83,11 +83,11 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestAppend()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "check@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "check@example.test", "test");
          var simulator = new ImapClientSimulator();
 
-         string sWelcomeMessage = simulator.Connect();
-         simulator.LogonWithLiteral("check@test.com", "test");
+         var sWelcomeMessage = simulator.Connect();
+         simulator.LogonWithLiteral("check@example.test", "test");
          simulator.SendSingleCommandWithLiteral("A01 APPEND INBOX {4}", "ABCD");
          Assert.AreEqual(1, simulator.GetMessageCount("INBOX"));
          simulator.Disconnect();
@@ -96,20 +96,20 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestDomainMaxMessageSizeLimitDisabled()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test", 0);
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test", 0);
          var message = new StringBuilder();
 
          // ~2 kb string
-         for (int i = 0; i < 25; i++)
+         for (var i = 0; i < 25; i++)
             message.AppendLine(
                "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
          _domain.MaxMessageSize = 0; // 1 kb
          _domain.Save();
 
-         var imapSim = new ImapClientSimulator("test@test.com", "test", "INBOX");
-         string result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
-                                                              message.ToString());
+         var imapSim = new ImapClientSimulator("test@example.test", "test", "INBOX");
+         var result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
+            message.ToString());
          imapSim.Logout();
 
          Assert.IsFalse(result.StartsWith("A01 NO Message size exceeds fixed maximum message size."));
@@ -118,20 +118,20 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestDomainMaxMessageSizeLimitEnabled()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test", 0);
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test", 0);
          var message = new StringBuilder();
 
          // ~2 kb string
-         for (int i = 0; i < 25; i++)
+         for (var i = 0; i < 25; i++)
             message.AppendLine(
                "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
          _domain.MaxMessageSize = 1; // 1 kb
          _domain.Save();
 
-         var imapSim = new ImapClientSimulator("test@test.com", "test", "INBOX");
-         string result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
-                                                              message.ToString());
+         var imapSim = new ImapClientSimulator("test@example.test", "test", "INBOX");
+         var result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
+            message.ToString());
          imapSim.Logout();
 
          Assert.IsTrue(result.StartsWith("A01 NO Message size exceeds fixed maximum message size."));
@@ -140,19 +140,19 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestGlobalMaxMessageSizeLimitDisabled()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test", 0);
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test", 0);
          var message = new StringBuilder();
 
          // ~2 kb string
-         for (int i = 0; i < 25; i++)
+         for (var i = 0; i < 25; i++)
             message.AppendLine(
                "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
          _settings.MaxMessageSize = 0;
 
-         var imapSim = new ImapClientSimulator("test@test.com", "test", "INBOX");
-         string result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
-                                                              message.ToString());
+         var imapSim = new ImapClientSimulator("test@example.test", "test", "INBOX");
+         var result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
+            message.ToString());
          imapSim.Logout();
 
          Assert.IsFalse(result.StartsWith("A01 NO Message size exceeds fixed maximum message size."));
@@ -161,19 +161,19 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestGlobalMaxMessageSizeLimitEnabled()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test", 0);
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test", 0);
          var message = new StringBuilder();
 
          // ~2 kb string
-         for (int i = 0; i < 25; i++)
+         for (var i = 0; i < 25; i++)
             message.AppendLine(
                "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
          _settings.MaxMessageSize = 1;
 
-         var imapSim = new ImapClientSimulator("test@test.com", "test", "INBOX");
-         string result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
-                                                              message.ToString());
+         var imapSim = new ImapClientSimulator("test@example.test", "test", "INBOX");
+         var result = imapSim.SendSingleCommandWithLiteral("A01 APPEND INBOX {" + message.Length + "}",
+            message.ToString());
          imapSim.Logout();
 
          Assert.IsTrue(result.StartsWith("A01 NO Message size exceeds fixed maximum message size."));
@@ -182,8 +182,8 @@ namespace RegressionTests.IMAP
 
       private string GetPublicDirectory()
       {
-         string dataDir = _settings.Directories.DataDirectory;
-         string publicDir = Path.Combine(dataDir, _settings.PublicFolderDiskName);
+         var dataDir = _settings.Directories.DataDirectory;
+         var publicDir = Path.Combine(dataDir, _settings.PublicFolderDiskName);
          return publicDir;
       }
    }

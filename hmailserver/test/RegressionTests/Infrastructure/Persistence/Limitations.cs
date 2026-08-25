@@ -7,43 +7,41 @@ using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure.Persistence
 {
    [TestFixture]
    public class Limitations : TestFixtureBase
    {
-
-
       [Test]
       public void TestDomainAliasRenameToSameNameAsDomain()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
 
-         DomainAlias da = _domain.DomainAliases.Add();
+         var da = _domain.DomainAliases.Add();
          da.AliasName = "test2.com";
          da.Save();
 
          try
          {
-            da.AliasName = "test.com";
+            da.AliasName = "example.test";
             da.Save();
          }
          catch (Exception)
          {
             return;
          }
+
          Assert.Fail("Domain alias with same name as domain was permitted.");
       }
 
       [Test]
       public void TestDomainAliasWithSameNameAsDomain()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
 
-         DomainAlias da = _domain.DomainAliases.Add();
-         da.AliasName = "test.com";
+         var da = _domain.DomainAliases.Add();
+         da.AliasName = "example.test";
 
          try
          {
@@ -53,6 +51,7 @@ namespace RegressionTests.Infrastructure.Persistence
          {
             return;
          }
+
          Assert.Fail("Domain alias with same name as domain was permitted.");
       }
 
@@ -62,7 +61,7 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.MaxAccountSize = 25;
          _domain.Save();
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1", 1);
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1", 1);
          account.Save();
       }
 
@@ -74,7 +73,7 @@ namespace RegressionTests.Infrastructure.Persistence
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1", 32);
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1", 32);
          }
          catch (Exception)
          {
@@ -92,8 +91,8 @@ namespace RegressionTests.Infrastructure.Persistence
 
          try
          {
-            Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1",
-                                                                               0);
+            var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1",
+               0);
          }
          catch (Exception)
          {
@@ -110,13 +109,13 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.MaxNumberOfAccounts = 3;
          _domain.Save();
 
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1");
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@test.com", "secret1");
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test3@test.com", "secret1");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@example.test", "secret1");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test3@example.test", "secret1");
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test4@test.com", "secret1");
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test4@example.test", "secret1");
          }
          catch (Exception)
          {
@@ -133,14 +132,14 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.MaxNumberOfAliases = 4;
          _domain.Save();
 
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test1@test.com", "test@test.com");
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test2@test.com", "test@test.com");
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test3@test.com", "test@test.com");
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test4@test.com", "test@test.com");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test1@example.test", "test@example.test");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test2@example.test", "test@example.test");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test3@example.test", "test@example.test");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test4@example.test", "test@example.test");
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test5@test.com", "test@test.com");
+            SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test5@example.test", "test@example.test");
          }
          catch (Exception)
          {
@@ -158,12 +157,12 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.Save();
 
          var recipients = new List<string>();
-         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test1@test.com", recipients);
-         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test2@test.com", recipients);
+         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test1@example.test", recipients);
+         SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test2@example.test", recipients);
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test3@test.com", recipients);
+            SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test3@example.test", recipients);
          }
          catch (Exception)
          {
@@ -179,22 +178,20 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.MaxMessageSize = 0;
          _domain.Save();
 
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "secret1", 0);
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "secret1", 0);
          var message = new StringBuilder();
 
-         for (int i = 0; i < 10000; i++)
-         {
-            message.Append("ABCDEFGH");
-         }
+         for (var i = 0; i < 10000; i++) message.Append("ABCDEFGH");
 
-         SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "TestSubject",
-                                                      message.ToString());
-         Pop3ClientSimulator.AssertMessageCount("test@test.com", "secret1", 1);
+         SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "TestSubject",
+            message.ToString());
+         Pop3ClientSimulator.AssertMessageCount("test@example.test", "secret1", 1);
          _domain.MaxMessageSize = 50;
          _domain.Save();
 
-         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "TestSubject",
-                                                       message.ToString()));
+         CustomAsserts.Throws<DeliveryFailedException>(() => SmtpClientSimulator.StaticSend("test@example.test",
+            "test@example.test", "TestSubject",
+            message.ToString()));
       }
 
 
@@ -204,14 +201,14 @@ namespace RegressionTests.Infrastructure.Persistence
          _domain.MaxSize = 30;
          _domain.Save();
 
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1", 10);
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@test.com", "secret1", 10);
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test3@test.com", "secret1", 10);
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1", 10);
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@example.test", "secret1", 10);
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test3@example.test", "secret1", 10);
 
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test4@test.com", "secret1", 10);
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test4@example.test", "secret1", 10);
          }
          catch (Exception)
          {
@@ -229,7 +226,7 @@ namespace RegressionTests.Infrastructure.Persistence
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@test.com", "secret1", 0);
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test1@example.test", "secret1", 0);
          }
          catch (Exception)
          {
@@ -242,7 +239,7 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDomainNameDuplicate()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
          SingletonProvider<TestSetup>.Instance.AddDomain(domains, "test2.com");
 
          try
@@ -253,17 +250,18 @@ namespace RegressionTests.Infrastructure.Persistence
          {
             return;
          }
+
          Assert.Fail("Duplicate domain name was permitted.");
       }
 
-      
+
       [Test]
       public void TestDomainNameDuplicateDomainRename()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddDomain(domains, "test2.com");
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domain = SingletonProvider<TestSetup>.Instance.AddDomain(domains, "test2.com");
 
-         domain.Name = "test.com";
+         domain.Name = "example.test";
 
          try
          {
@@ -273,15 +271,16 @@ namespace RegressionTests.Infrastructure.Persistence
          {
             return;
          }
+
          Assert.Fail("Duplicate domain name was permitted.");
       }
 
       [Test]
       public void TestDomainWithSameNameAsDomainAlias()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
 
-         DomainAlias da = _domain.DomainAliases.Add();
+         var da = _domain.DomainAliases.Add();
          da.AliasName = "test2.com";
          da.Save();
 
@@ -293,6 +292,7 @@ namespace RegressionTests.Infrastructure.Persistence
          {
             return;
          }
+
          Assert.Fail("Domain with same name as domain alias was permitted.");
       }
 
@@ -300,15 +300,15 @@ namespace RegressionTests.Infrastructure.Persistence
       [Description("Issue 195, Creating two SMTP routes allowed for same domain.")]
       public void TestDuplicateRoutes()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Routes routes = app.Settings.Routes;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var routes = app.Settings.Routes;
 
-         Route route = routes.Add();
-         route.DomainName = "test.com";
+         var route = routes.Add();
+         route.DomainName = "example.test";
          route.Save();
 
-         Route route2 = routes.Add();
-         route2.DomainName = "test.com";
+         var route2 = routes.Add();
+         route2.DomainName = "example.test";
 
          var ex = Assert.Throws<COMException>(() => route2.Save());
          StringAssert.Contains("Another route with this name already exists.", ex.Message);
@@ -317,89 +317,92 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestNameDuplicateAccount()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "secret1");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "secret1");
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "secret2");
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "secret2");
          }
          catch (Exception)
          {
             return;
          }
+
          Assert.Fail("Duplicate account was permitted");
       }
 
       [Test]
       public void TestNameDuplicateAlias()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "secret1");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "secret1");
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test@test.com", "secret2");
+            SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test@example.test", "secret2");
          }
          catch (Exception)
          {
             return;
          }
+
          Assert.Fail("Alias with same name as account was permitted.");
       }
 
       [Test]
       public void TestNameDuplicateDistributionList()
       {
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test@test.com", "test2@test.com");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "test@example.test", "test2@example.test");
 
          var recipients = new List<string>();
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test@test.com", recipients);
+            SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "test@example.test", recipients);
          }
          catch (Exception)
          {
             return;
          }
+
          Assert.Fail("Distribution list with same name as alias was permitted.");
       }
 
       [Test]
       public void TestNameDuplicateGroup()
       {
-         SingletonProvider<TestSetup>.Instance.AddGroup("test@test.com");
+         SingletonProvider<TestSetup>.Instance.AddGroup("test@example.test");
 
          try
          {
-            SingletonProvider<TestSetup>.Instance.AddGroup("test@test.com");
+            SingletonProvider<TestSetup>.Instance.AddGroup("test@example.test");
          }
          catch (Exception)
          {
             return;
          }
+
          Assert.Fail("Two groups with same name was permitted.");
       }
 
       [Test]
       public void TestSaveInvalidIPRange()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         SecurityRange range = app.Settings.SecurityRanges.Add();
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var range = app.Settings.SecurityRanges.Add();
 
          range.Name = "Test";
          range.LowerIP = "1.1.1.1";
          range.UpperIP = "0.0.0.0";
          var ex = Assert.Throws<COMException>(() => range.Save());
          StringAssert.Contains("The lower IP address must be lower or the same as the upper IP address.", ex.Message);
-
       }
 
 
       [Test]
       public void TestSaveValidIPRange()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         SecurityRange range = app.Settings.SecurityRanges.Add();
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var range = app.Settings.SecurityRanges.Add();
 
          range.Name = "Test";
          range.LowerIP = "0.0.0.0";

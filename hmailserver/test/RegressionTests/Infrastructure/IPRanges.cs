@@ -2,30 +2,26 @@
 // http://www.hmailserver.com
 
 using System;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure
 {
    [TestFixture]
    public class IPRanges : TestFixtureBase
    {
-      #region Setup/Teardown
-
       [SetUp]
       public new void SetUp()
       {
          _ipRanges = SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges;
       }
 
-      #endregion
-
       private SecurityRanges _ipRanges;
 
       private void AddIPRange()
       {
-         SecurityRange oRange = _ipRanges.Add();
+         var oRange = _ipRanges.Add();
          oRange.LowerIP = "127.0.0.1";
          oRange.UpperIP = "127.0.0.1";
          oRange.Name = "My computer";
@@ -46,6 +42,26 @@ namespace RegressionTests.Infrastructure
       {
          while (_ipRanges.Count > 0)
             _ipRanges.Delete(0);
+      }
+
+      [Test]
+      public void TestIPv6RangeCanBeSavedAndRetrieved()
+      {
+         // Verify that IPv6 addresses are parsed and stored correctly.
+         // This exercises the make_address_v6 code path in IPAddress::TryParse.
+         var range = _ipRanges.Add();
+         range.LowerIP = "::1";
+         range.UpperIP = "::1";
+         range.Name = "IPv6 loopback";
+         range.AllowSMTPConnections = true;
+         range.Save();
+
+         // Re-read from server to confirm the value round-tripped correctly.
+         var saved = _ipRanges[_ipRanges.Count - 1];
+         Assert.AreEqual("::1", saved.LowerIP);
+         Assert.AreEqual("::1", saved.UpperIP);
+
+         _ipRanges.Delete(_ipRanges.Count - 1);
       }
 
       [Test]

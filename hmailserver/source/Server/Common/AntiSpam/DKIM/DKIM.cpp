@@ -16,11 +16,6 @@
 #include "../../Util/FileUtilities.h"
 #include "../../Persistence/PersistentMessage.h"
 
-#include <openssl/pem.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-
-
 #ifdef _DEBUG
 #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
@@ -38,8 +33,6 @@ namespace HM
    void 
    DKIM::Initialize()
    {
-      OpenSSL_add_all_algorithms();
-      ERR_load_crypto_strings();
       ERR_load_EVP_strings();
 
       recommendedHeaderFields_.push_back("From");
@@ -93,13 +86,14 @@ namespace HM
       return publicKey;
    }
 
-   bool 
+   bool
    DKIM::Sign(std::shared_ptr<Message> message,
+              const AnsiString &header,
               const AnsiString &domain,
               const AnsiString &selector,
               const String &privateKey,
-              HashCreator::HashType algorithm, 
-              Canonicalization::CanonicalizeMethod headerMethod, 
+              HashCreator::HashType algorithm,
+              Canonicalization::CanonicalizeMethod headerMethod,
               Canonicalization::CanonicalizeMethod bodyMethod)
    {
 
@@ -116,7 +110,16 @@ namespace HM
 
       if (FileUtilities::FileSize(fileName) > MaxFileSize)
       {
-         LOG_DEBUG("Message was not signed using DKIM since the size of the message exceeded the max DKIM size of 10MB.");
+         LOG_DEBUG("Message was not signed using DKIM since the size of the message exceeded the max DKIM size of 50MB.");
+         return true;
+      }
+
+      MimeHeader mimeHeader;
+      mimeHeader.Load(header.c_str(), header.GetLength(), false);
+
+      if (HasSignatureForDomain_(mimeHeader, domain))
+      {
+         LOG_DEBUG("Skipping DKIM signing: message already carries a DKIM-Signature for domain " + String(domain));
          return true;
       }
 
@@ -124,8 +127,6 @@ namespace HM
 
       HashCreator shaer(algorithm);
       String bodyHash = shaer.GenerateHashNoSalt(messageBody, HashCreator::base64);
-
-      AnsiString header = PersistentMessage::LoadHeader(fileName);
 
       std::pair<AnsiString, AnsiString> dummySignatureField;
 
@@ -143,7 +144,7 @@ namespace HM
 
       String headerValue = BuildSignatureHeader_(tagA, tagDomain, tagSelector, tagC, tagQ, fieldList, bodyHash, "");
       
-      canonicalizedHeader += headerCanonicalization->CanonicalizeHeaderLine("dkim-signature", headerValue);
+      canonicalizedHeader += headerCanonicalization->CanonicalizeHeaderLine("DKIM-Signature", headerValue);
 
       AnsiString privateKeyContent = FileUtilities::ReadCompleteTextFile(String(privateKey));
 
@@ -158,7 +159,7 @@ namespace HM
 
       // output to file.
       std::vector<std::pair<AnsiString, AnsiString> > fieldsToWrite;
-      fieldsToWrite.push_back(std::make_pair("dkim-signature", headerValue));
+      fieldsToWrite.push_back(std::make_pair("DKIM-Signature", headerValue));
 
       TraceHeaderWriter writer;
       bool result = writer.Write(fileName, message, fieldsToWrite);
@@ -638,20 +639,6 @@ namespace HM
          }
       }
       
-      AnsiString allowedHashes = dnsKeyParams.GetValue("h");
-      if (allowedHashes.GetLength() > 0)
-      {
-         AnsiString tagA = signatureParams.GetValue("a");
-
-         AnsiString usedHash = tagA == "rsa-sha256" ? "sha256" : "sha1";
-
-         if (allowedHashes.Find(usedHash) < 0)
-         {
-            LOG_DEBUG("DKIM: Error when retrieving public key. Hash not allowed: " + usedHash);
-            return PermFail;
-         }
-      }
-
       return Pass;
    }
 
@@ -712,8 +699,12 @@ namespace HM
       AnsiString tagH = entryParams.GetValue("h");
       if (!tagH.IsEmpty())
       {
-         AnsiString tagA = entryParams.GetValue("a");
-         if (tagH.Find(tagH) < 0)
+         AnsiString tagA = headerParams.GetValue("a");
+         // The "a=" tag has the form "<key-type>-<hash>" (e.g. "rsa-sha256", "ed25519-sha256").
+         // Extract the hash portion after the first '-' to compare against the DNS "h=" list.
+         int dashPos = tagA.Find("-");
+         AnsiString usedHash = dashPos >= 0 ? tagA.Mid(dashPos + 1) : tagA;
+         if (tagH.Find(usedHash) < 0)
             return false;
       }
 
@@ -768,7 +759,27 @@ namespace HM
       return headerValue;
    }
 
-   std::vector<std::pair<AnsiString, AnsiString> > 
+   bool
+   DKIM::HasSignatureForDomain_(MimeHeader &mimeHeader, const AnsiString &domain)
+   {
+      std::vector<std::pair<AnsiString, AnsiString>> signatures = GetSignatureFields(mimeHeader);
+      for (const auto &sig : signatures)
+      {
+         AnsiString headerValue = sig.second;
+         MimeField::UnfoldField(headerValue);
+
+         DKIMParameters params;
+         params.Load(headerValue);
+
+         AnsiString sigDomain = params.GetValue("d");
+         if (sigDomain.CompareNoCase(domain) == 0)
+            return true;
+      }
+
+      return false;
+   }
+
+   std::vector<std::pair<AnsiString, AnsiString> >
    DKIM::GetSignatureFields(MimeHeader &mimeHeader)
    {
       std::vector<std::pair<AnsiString, AnsiString>> result;

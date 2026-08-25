@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
-using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.POP3.Fetching
 {
-   class LockHelper
+   internal class LockHelper
    {
       public static void WaitForUnlock(FetchAccount fetchAccount)
       {
@@ -21,8 +20,8 @@ namespace RegressionTests.POP3.Fetching
             Thread.Sleep(100);
          }
 
-         string defaultLog = LogHandler.ReadCurrentDefaultLog();
-         Assert.Fail(string.Format("At {0}, fetch account was not unlocked.", DateTime.Now));
+         var defaultLog = LogHandler.ReadCurrentDefaultLog();
+         Assert.Fail("At {0}, fetch account was not unlocked.", DateTime.Now);
       }
    }
 }

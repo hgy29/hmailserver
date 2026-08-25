@@ -72,6 +72,7 @@ namespace HM
       
       bool GetAddXAuthUserHeader() {return add_xauth_user_header_; }
       String GetDaemonAddressDomain() const { return daemonaddress_domain_; }
+      bool GetAddXOriginalRcptToHeader() { return add_xoriginal_rcpt_to_header_; }	  
       int GetMaxNumberOfExternalFetchThreads() {return max_no_of_external_fetch_threads_ ;}
       bool GetGreylistingEnabledDuringRecordExpiration() {return greylisting_enabled_during_record_expiration_;}
       int GetGreylistingExpirationInterval() {return greylisting_expiration_interval_; }
@@ -110,6 +111,7 @@ namespace HM
       bool GetBackupMessagesDBOnly () const { return backup_messages_dbonly_; }
       bool GetAddXAuthUserIP () const { return add_xauth_user_ip_; }
       bool GetRewriteEnvelopeFromWhenForwarding() const { return rewrite_envelope_from_when_forwarding_; }
+      void SetRewriteEnvelopeFromWhenForwarding(bool value);
       bool GetUseDNSCache() const { return use_dns_cache_; }
       String GetDNSServer() const { return dns_server_; }
       std::set<int> GetAuthDisabledOnPorts();
@@ -145,6 +147,7 @@ namespace HM
       int no_of_dbconnection_attempts_Delay;
       bool add_xauth_user_header_;
       String daemonaddress_domain_;
+      bool add_xoriginal_rcpt_to_header_;	  
       int max_no_of_external_fetch_threads_;
 
       bool greylisting_enabled_during_record_expiration_;

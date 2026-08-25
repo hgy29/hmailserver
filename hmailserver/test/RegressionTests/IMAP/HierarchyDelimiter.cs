@@ -3,7 +3,6 @@
 
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.IMAP
 {
@@ -14,19 +13,19 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the Create command.")]
       public void TestHierarchyDelimiterCreate()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "/";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test.Test";
+         var folderName = "Test.Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
-         string listResponse = simulator.List();
+         var listResponse = simulator.List();
          Assert.IsTrue(listResponse.Contains("\"" + folderName + "\""));
          Assert.IsTrue(!listResponse.Contains("\"Test\""));
          simulator.Disconnect();
@@ -36,19 +35,19 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the Delete command.")]
       public void TestHierarchyDelimiterDelete()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "\\";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test\\Test";
+         var folderName = "Test\\Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
-         string listResponse = simulator.List();
+         var listResponse = simulator.List();
          Assert.IsTrue(listResponse.Contains("\"Test\\Test\""));
          Assert.IsTrue(listResponse.Contains("\"Test\""));
          Assert.IsTrue(simulator.DeleteFolder("Test\\Test"));
@@ -62,19 +61,19 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the List response.")]
       public void TestHierarchyDelimiterListResponse()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "\\";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test\\Test";
+         var folderName = "Test\\Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
-         string listResponse = simulator.List();
+         var listResponse = simulator.List();
          Assert.IsTrue(listResponse.Contains("\"Test\\Test\""));
          Assert.IsTrue(listResponse.Contains("\"Test\""));
          simulator.Disconnect();
@@ -84,21 +83,21 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the LSUB response.")]
       public void TestHierarchyDelimiterLsubResponse()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "/";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test/Test";
+         var folderName = "Test/Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
          Assert.IsTrue(simulator.Subscribe("Test"));
          Assert.IsTrue(simulator.Subscribe("Test/Test"));
-         string lsubResponse = simulator.LSUB();
+         var lsubResponse = simulator.LSUB();
          Assert.IsTrue(lsubResponse.Contains("\"Test/Test\""));
          Assert.IsTrue(lsubResponse.Contains("\"Test\""));
          simulator.Disconnect();
@@ -108,18 +107,18 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the Namespace response.")]
       public void TestHierarchyDelimiterNamespaceResponse()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "\\";
-         string publicFolderName = _settings.IMAPPublicFolderName;
+         var publicFolderName = _settings.IMAPPublicFolderName;
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
          var simulator = new ImapClientSimulator();
          simulator.ConnectAndLogon(account.Address, "test");
-         string result = simulator.Send("A01 NAMESPACE");
-         string correctNamespaceSetting = "* NAMESPACE ((\"\" \"\\\\\")) NIL ((\"" + publicFolderName +
-                                          "\" \"\\\\\"))";
+         var result = simulator.Send("A01 NAMESPACE");
+         var correctNamespaceSetting = "* NAMESPACE ((\"\" \"\\\\\")) NIL ((\"" + publicFolderName +
+                                       "\" \"\\\\\"))";
          Assert.IsTrue(result.Contains(correctNamespaceSetting), result);
          simulator.Disconnect();
 
@@ -148,20 +147,20 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the Rename command.")]
       public void TestHierarchyDelimiterRename()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "/";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test/Test";
-         string newFolderName = "Apa/Test";
+         var folderName = "Test/Test";
+         var newFolderName = "Apa/Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
-         string listResponse = simulator.List();
+         var listResponse = simulator.List();
          Assert.IsTrue(listResponse.Contains("\"" + folderName + "\""));
          Assert.IsTrue(listResponse.Contains("\"Test\""));
          Assert.IsTrue(simulator.RenameFolder("Test", "Apa"));
@@ -175,21 +174,21 @@ namespace RegressionTests.IMAP
       [Description("Test that the hierchary delimiter has effect on the LSUB response.")]
       public void TestHierarchyDelimiterSlash()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Settings settings = _settings;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var settings = _settings;
          settings.IMAPHierarchyDelimiter = "\\";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "quote@example.test", "test");
 
-         string folderName = "Test\\Test";
+         var folderName = "Test\\Test";
 
          var simulator = new ImapClientSimulator();
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.Logon(account.Address, "test");
          Assert.IsTrue(simulator.CreateFolder(folderName));
          Assert.IsTrue(simulator.Subscribe("Test"));
          Assert.IsTrue(simulator.Subscribe("Test\\Test"));
-         string lsubResponse = simulator.LSUB();
+         var lsubResponse = simulator.LSUB();
          Assert.IsTrue(lsubResponse.Contains("\"Test\\Test\""));
          Assert.IsTrue(lsubResponse.Contains("\"Test\""));
          simulator.Disconnect();

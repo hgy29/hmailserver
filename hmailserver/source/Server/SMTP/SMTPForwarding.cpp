@@ -13,7 +13,6 @@
 
 #include "../Common/Persistence/PersistentMessage.h"
 
-#include "../common/Util/MailerDaemonAddressDeterminer.h"
 
 #include "RecipientParser.h"
 
@@ -37,6 +36,13 @@ namespace HM
       if (pRecipientAccount->GetForwardAddress().IsEmpty())
       {
          // Configuration error. Forward was enabled, but no address specified.
+         return true;
+      }
+
+      // Don't forward when the message is classified as spam
+      if (pRecipientAccount->GetForwardAbortSpamFlagged() && pOriginalMessage->GetFlagSpam())
+      {
+         LOG_DEBUG("SMTPForwarding::PerformForwarding aborted, message marked as spam");
          return true;
       }
 
@@ -83,15 +89,12 @@ namespace HM
 
       // Create a copy of the message
       std::shared_ptr<Message> pNewMessage = PersistentMessage::CopyToQueue(pRecipientAccount, pOriginalMessage);
-     
-      String sMailerDaemonAddress = MailerDaemonAddressDeterminer::GetMailerDaemonAddress(pNewMessage);
-      if (pNewMessage->GetFromAddress().IsEmpty())
-         pNewMessage->SetFromAddress(sMailerDaemonAddress);
-      else if (IniFileSettings::Instance()->GetRewriteEnvelopeFromWhenForwarding())
+
+      if (IniFileSettings::Instance()->GetRewriteEnvelopeFromWhenForwarding() && !pNewMessage->GetFromAddress().IsEmpty())
          pNewMessage->SetFromAddress(pRecipientAccount->GetAddress());
 
       pNewMessage->SetState(Message::Delivering);
-      
+
       // Increase the number of rule-deliveries made.
       std::shared_ptr<MessageData> pNewMsgData = std::shared_ptr<MessageData>(new MessageData());
       const String newFileName = PersistentMessage::GetFileName(pNewMessage);

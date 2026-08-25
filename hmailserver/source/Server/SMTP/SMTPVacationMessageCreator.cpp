@@ -85,11 +85,10 @@ namespace HM
       }
 
 
-      // Send a copy of this email.
+      // Reply to the email
       std::shared_ptr<Message> pMsg = std::shared_ptr<Message>(new Message());
 
       pMsg->SetState(Message::Delivering);
-      pMsg->SetFromAddress(recipientAccount->GetAddress());
 
       const String newFileName = PersistentMessage::GetFileName(pMsg);
 
@@ -97,7 +96,6 @@ namespace HM
       pNewMsgData->LoadFromMessage(newFileName, pMsg);
       
       // Required headers
-      pNewMsgData->SetReturnPath(recipientAccount->GetAddress());
       pNewMsgData->GenerateMessageID();
       pNewMsgData->SetSentTime(Time::GetCurrentMimeDate());
       pNewMsgData->SetFieldValue("Content-Type", "text/plain; charset=\"utf-8\"");

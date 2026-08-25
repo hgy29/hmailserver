@@ -53,7 +53,7 @@
             this.textFrom.Name = "textFrom";
             this.textFrom.Size = new System.Drawing.Size(185, 22);
             this.textFrom.TabIndex = 1;
-            this.textFrom.Text = "test@test.com";
+            this.textFrom.Text = "test@example.test";
             // 
             // textTo
             // 
@@ -61,7 +61,7 @@
             this.textTo.Name = "textTo";
             this.textTo.Size = new System.Drawing.Size(185, 22);
             this.textTo.TabIndex = 3;
-            this.textTo.Text = "test@test.com";
+            this.textTo.Text = "test@example.test";
             // 
             // labelTo
             // 

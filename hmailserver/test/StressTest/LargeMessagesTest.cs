@@ -15,7 +15,7 @@ namespace StressTest
       [SetUp]
       public new void SetUp()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
 
       [Test]
@@ -41,8 +41,8 @@ namespace StressTest
 
             using (var mail = new MailMessage())
             {
-               mail.From = new MailAddress("test@test.com");
-               mail.To.Add("test@test.com");
+               mail.From = new MailAddress("test@example.test");
+               mail.To.Add("test@example.test");
                mail.Subject = "Automatic server test";
                mail.Body = "Automatic server test";
                mail.BodyEncoding = Encoding.GetEncoding(1252);

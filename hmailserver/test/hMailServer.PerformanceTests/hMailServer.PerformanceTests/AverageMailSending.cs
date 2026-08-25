@@ -18,7 +18,7 @@ namespace hMailServer.PerformanceTests
       [SetUp]
       public new void SetUp()
       {
-         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
 
       [Test]
@@ -68,7 +68,7 @@ namespace hMailServer.PerformanceTests
          RetryHelper.TryAction(timeout, () =>
             {
                var pop3ClientSimulator = new POP3ClientSimulator();
-               int count = pop3ClientSimulator.GetMessageCount("test@test.com", "test");
+               int count = pop3ClientSimulator.GetMessageCount("test@example.test", "test");
 
                Assert.AreEqual(expectedMessageCount, count);
             });
@@ -87,12 +87,12 @@ namespace hMailServer.PerformanceTests
 
          var mailMessage = new MailMessage()
             {
-               From = new MailAddress("test@test.com"),               
+               From = new MailAddress("test@example.test"),               
                Subject = Guid.NewGuid().ToString(),
                Body = body.ToString()
             };
 
-         mailMessage.To.Add(new MailAddress("test@test.com"));
+         mailMessage.To.Add(new MailAddress("test@example.test"));
 
          return mailMessage;
       }

@@ -15,26 +15,24 @@ namespace RegressionTests.Shared
 {
    public class TcpServer : IDisposable
    {
-      private readonly ManualResetEvent _listenThreadStarted = new ManualResetEvent(false);
       private readonly ManualResetEvent _clientCompleted = new ManualResetEvent(false);
-
-      private readonly ManualResetEvent _workerThreadFinished = new ManualResetEvent(false);
-      private readonly ManualResetEvent _stopServerEvent = new ManualResetEvent(false);
+      private readonly ManualResetEvent _listenThreadStarted = new ManualResetEvent(false);
 
       private readonly int _maxNumberOfConnections;
       private readonly int _port;
+      private readonly ManualResetEvent _stopServerEvent = new ManualResetEvent(false);
 
-      private int _numberOfConnectedClients;
-      private Thread _serverThread;
-      private TcpListener _tcpListener;
-      private Exception _workerThreadException;
-      protected TcpConnection _tcpConnection;
+      private readonly ManualResetEvent _workerThreadFinished = new ManualResetEvent(false);
 
       protected eConnectionSecurity _connectionSecurity;
 
-      private string _conversation;
-
       private X509Certificate2 _localCertificate;
+
+      private int _numberOfConnectedClients;
+      private Thread _serverThread;
+      protected TcpConnection _tcpConnection;
+      private TcpListener _tcpListener;
+      private Exception _workerThreadException;
 
       public TcpServer(int maxNumberOfConnections, int port, eConnectionSecurity connectionSecurity)
       {
@@ -45,19 +43,33 @@ namespace RegressionTests.Shared
          SecondsToWaitBeforeTerminate = 15;
       }
 
+      public int SecondsToWaitBeforeTerminate { get; set; }
+
+      public string Conversation { get; private set; }
+
+      public void Dispose()
+      {
+         _stopServerEvent.Set();
+
+         Assert.IsTrue(_workerThreadFinished.WaitOne(TimeSpan.FromSeconds(15), false));
+
+         if (_tcpListener != null)
+            _tcpListener.Stop();
+
+         DisposeSocket();
+      }
+
       public void SetCertificate(X509Certificate2 certificate)
       {
          _localCertificate = certificate;
       }
-
-      public int SecondsToWaitBeforeTerminate { get; set; }
 
       public void StartListen()
       {
          Console.WriteLine("Starting listen...");
 
          _listenThreadStarted.Reset();
-                 
+
 
          _serverThread = new Thread(StartListenWorker);
          _serverThread.Name = "Listen thread";
@@ -78,9 +90,9 @@ namespace RegressionTests.Shared
             var local = IPAddress.Parse("0.0.0.0");
 
             _tcpListener = new TcpListener(local, _port)
-               {
-                  ExclusiveAddressUse = false
-               };
+            {
+               ExclusiveAddressUse = false
+            };
 
             _tcpListener.Start();
 
@@ -101,7 +113,7 @@ namespace RegressionTests.Shared
 
       private void HandleClients()
       {
-         for (int i = 0; i < _maxNumberOfConnections; i++)
+         for (var i = 0; i < _maxNumberOfConnections; i++)
          {
             _clientCompleted.Reset();
 
@@ -115,10 +127,10 @@ namespace RegressionTests.Shared
             }
 
             WaitHandle.WaitAny(new WaitHandle[]
-               {
-                  _stopServerEvent,
-                  _clientCompleted
-               });
+            {
+               _stopServerEvent,
+               _clientCompleted
+            });
 
             if (_stopServerEvent.WaitOne(TimeSpan.FromMilliseconds(1), false))
                return;
@@ -140,10 +152,7 @@ namespace RegressionTests.Shared
                return;
             }
 
-            if (_connectionSecurity == eConnectionSecurity.eCSTLS)
-            {
-               _tcpConnection.HandshakeAsServer(_localCertificate);
-            }
+            if (_connectionSecurity == eConnectionSecurity.eCSTLS) _tcpConnection.HandshakeAsServer(_localCertificate);
 
             _numberOfConnectedClients++;
 
@@ -163,51 +172,32 @@ namespace RegressionTests.Shared
          {
             _tcpConnection.Dispose();
             _tcpConnection = null;
-         }   
+         }
       }
 
       protected virtual void HandleClient()
       {
-
       }
-      
+
       public void WaitForCompletion()
       {
          if (_workerThreadException != null)
             throw new Exception("An error occurred when calling AcceptSocket.", _workerThreadException);
 
-         for (int i = 0; i < SecondsToWaitBeforeTerminate; i++)
-         {
+         for (var i = 0; i < SecondsToWaitBeforeTerminate; i++)
             if (_workerThreadFinished.WaitOne(1000, true))
-            {
                return;
-            }
-         }
 
-         string log = LogHandler.ReadCurrentDefaultLog();
+         var log = LogHandler.ReadCurrentDefaultLog();
 
          if (_numberOfConnectedClients < _maxNumberOfConnections)
             Assert.Fail(
-               string.Format(
-                  "At {0} - Client did not connect to simulated server. Expected connection count: {1}, Actual: {2}\r\nLog:\r\n{3}",
-                  DateTime.Now, _maxNumberOfConnections, _numberOfConnectedClients, log));
+               "At {0} - Client did not connect to simulated server. Expected connection count: {1}, Actual: {2}\r\nLog:\r\n{3}",
+               DateTime.Now, _maxNumberOfConnections, _numberOfConnectedClients, log);
          else
             Assert.Fail(
-               string.Format(
-                  "At {0} - Client did not disconnect from simulated server. Expected connection count: {1}, Actual: {2}\r\nLog:\r\n{3}",
-                  DateTime.Now, _maxNumberOfConnections, _numberOfConnectedClients, log));
-      }
-
-      public void Dispose()
-      {
-         _stopServerEvent.Set();
-
-         Assert.IsTrue(_workerThreadFinished.WaitOne(TimeSpan.FromSeconds(15), false));
-
-         if (_tcpListener != null)
-            _tcpListener.Stop();
-
-         DisposeSocket();
+               "At {0} - Client did not disconnect from simulated server. Expected connection count: {1}, Actual: {2}\r\nLog:\r\n{3}",
+               DateTime.Now, _maxNumberOfConnections, _numberOfConnectedClients, log);
       }
 
       public void Disconnect()
@@ -217,34 +207,29 @@ namespace RegressionTests.Shared
 
       public void Send(string s)
       {
-         _conversation += s;
+         Conversation += s;
          _tcpConnection.Send(s);
       }
-      
+
       public string Receive()
       {
-         string data = _tcpConnection.Receive();
-         _conversation += data;
+         var data = _tcpConnection.Receive();
+         Conversation += data;
          return data;
       }
 
       public string ReadUntil(string text)
       {
-         string data = _tcpConnection.ReadUntil(text);
-         _conversation += data;
+         var data = _tcpConnection.ReadUntil(text);
+         Conversation += data;
          return data;
       }
 
       public string ReadUntil(List<string> possibleReplies)
       {
-         string data =_tcpConnection.ReadUntil(possibleReplies);
-         _conversation += data;
+         var data = _tcpConnection.ReadUntil(possibleReplies);
+         Conversation += data;
          return data;
-      }
-
-      public string Conversation
-      {
-         get { return _conversation; }
       }
    }
 }

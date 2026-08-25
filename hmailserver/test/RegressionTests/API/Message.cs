@@ -10,8 +10,6 @@ using System.Text;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
-using Attachment = System.Net.Mail.Attachment;
 
 namespace RegressionTests.API
 {
@@ -22,9 +20,9 @@ namespace RegressionTests.API
       [Description("Test to add a body after an attachment has been added.")]
       public void TestAddBodyAfterAttachment()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
-         string filename = Path.Combine(Path.GetTempPath(), "dummy.txt");
+         var filename = Path.Combine(Path.GetTempPath(), "dummy.txt");
          File.WriteAllText(filename, "tjena moss");
 
          var message = new hMailServer.Message();
@@ -33,10 +31,10 @@ namespace RegressionTests.API
          message.Body = "Hello";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: multipart/mixed;"));
          Assert.IsTrue(messageText.Contains("Hello"));
@@ -48,23 +46,23 @@ namespace RegressionTests.API
       [Test]
       public void TestAddTextDuringSending()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Send a message to the account.
          var message = new hMailServer.Message();
          Assert.AreEqual(0, message.State);
 
-         Scripting scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
+         var scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
 
-         string signature = "MySignature";
+         var signature = "MySignature";
 
-         string script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
-                         " Call EventLog.Write(\"Subject:\" +message.Subject)" + Environment.NewLine +
-                         " Call EventLog.Write(\"Date:\" +message.Date)" + Environment.NewLine +
-                         " Call EventLog.Write(\"Body:\" +message.Body)" + Environment.NewLine +
-                         " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
-                         " message.Save() " + Environment.NewLine +
-                         "End Sub" + Environment.NewLine + Environment.NewLine;
+         var script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
+                      " Call EventLog.Write(\"Subject:\" +message.Subject)" + Environment.NewLine +
+                      " Call EventLog.Write(\"Date:\" +message.Date)" + Environment.NewLine +
+                      " Call EventLog.Write(\"Body:\" +message.Body)" + Environment.NewLine +
+                      " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
+                      " message.Save() " + Environment.NewLine +
+                      "End Sub" + Environment.NewLine + Environment.NewLine;
 
          File.WriteAllText(scripting.CurrentScriptFile, script);
          scripting.Enabled = true;
@@ -73,11 +71,11 @@ namespace RegressionTests.API
 
          // Send the message.
          var recipients = new List<string>();
-         recipients.Add("test@test.com");
-         SmtpClientSimulator.StaticSend("test@test.com", recipients, "Hej", "Välkommen till verkligheten");
+         recipients.Add("test@example.test");
+         SmtpClientSimulator.StaticSend("test@example.test", recipients, "Hej", "Välkommen till verkligheten");
 
          // Check that the message exists
-         string firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
+         var firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
 
          Assert.IsNotEmpty(firstMessageText);
          Assert.IsTrue(firstMessageText.Contains(signature));
@@ -87,30 +85,30 @@ namespace RegressionTests.API
       [Test]
       public void TestAddTextDuringSendingAttachment()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Send a message to the account.
          var message = new hMailServer.Message();
          Assert.AreEqual(0, message.State);
 
-         Scripting scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
+         var scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
 
-         string signature = "MySignature";
+         var signature = "MySignature";
 
-         string script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
-                         " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
-                         " message.Save() " + Environment.NewLine +
-                         "End Sub" + Environment.NewLine + Environment.NewLine;
+         var script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
+                      " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
+                      " message.Save() " + Environment.NewLine +
+                      "End Sub" + Environment.NewLine + Environment.NewLine;
 
          File.WriteAllText(scripting.CurrentScriptFile, script);
          scripting.Enabled = true;
          scripting.Reload();
 
-         Assembly a = Assembly.GetExecutingAssembly();
+         var a = Assembly.GetExecutingAssembly();
 
          var mail = new MailMessage();
          mail.From = new MailAddress("test@test.se");
-         mail.To.Add("test@test.com");
+         mail.To.Add("test@example.test");
          mail.Subject = "Automatiskt servertest";
          mail.Body = "Detta är ett automatiskt test av epostservern.";
          mail.BodyEncoding = Encoding.GetEncoding(1252);
@@ -120,40 +118,40 @@ namespace RegressionTests.API
          oClient.Send(mail);
 
          // Check that the message exists
-         string firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
+         var firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
 
          Assert.IsNotEmpty(firstMessageText, firstMessageText);
-         Assert.IsTrue(firstMessageText.Contains(signature), firstMessageText);
+         StringAssert.Contains(signature, firstMessageText, "The message retrieved from POP3 server does not contain signature.");
       }
 
       [Test]
       [Description("Add text to an empty body during sending of attachments")]
       public void TestAddTextToEmptyBody()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Send a message to the account.
          var message = new hMailServer.Message();
          Assert.AreEqual(0, message.State);
 
-         Scripting scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
+         var scripting = SingletonProvider<TestSetup>.Instance.GetApp().Settings.Scripting;
 
-         string signature = "MySignature";
+         var signature = "MySignature";
 
-         string script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
-                         " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
-                         " message.Save() " + Environment.NewLine +
-                         "End Sub" + Environment.NewLine + Environment.NewLine;
+         var script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
+                      " message.Body = message.Body & \"" + signature + "\" " + Environment.NewLine +
+                      " message.Save() " + Environment.NewLine +
+                      "End Sub" + Environment.NewLine + Environment.NewLine;
 
          File.WriteAllText(scripting.CurrentScriptFile, script);
          scripting.Enabled = true;
          scripting.Reload();
 
-         Assembly a = Assembly.GetExecutingAssembly();
+         var a = Assembly.GetExecutingAssembly();
 
          var mail = new MailMessage();
          mail.From = new MailAddress("test@test.se");
-         mail.To.Add("test@test.com");
+         mail.To.Add("test@example.test");
          mail.Subject = "Automatiskt servertest";
          mail.Body = "";
          mail.BodyEncoding = Encoding.GetEncoding(1252);
@@ -163,27 +161,27 @@ namespace RegressionTests.API
          oClient.Send(mail);
 
          // Check that the message exists
-         string firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
+         var firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
 
          Assert.IsNotEmpty(firstMessageText, firstMessageText);
-         Assert.IsTrue(firstMessageText.Contains(signature), firstMessageText);
+         StringAssert.Contains(signature, firstMessageText, "The message retrieved from POP3 server does not contain signature.");
       }
 
       [Test]
       [Description("Test to create a simple message with a HTML body.")]
       public void TestMailCreationHTML()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
          var message = new hMailServer.Message();
          message.AddRecipient("", account.Address);
          message.HTMLBody = "Hello";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: text/html; charset=\"utf-8\""));
          Assert.IsTrue(header.Contains("Content-Transfer-Encoding: quoted-printable"));
@@ -194,7 +192,7 @@ namespace RegressionTests.API
       [Description("Test to create a simple message with a HTML body and a plain text body.")]
       public void TestMailCreationHTMLAndPlainText()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
          var message = new hMailServer.Message();
          message.AddRecipient("", account.Address);
@@ -202,10 +200,10 @@ namespace RegressionTests.API
          message.Body = "PlainTextBody";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: multipart/alternative"));
          Assert.IsFalse(header.Contains("Content-Transfer-Encoding: quoted-printable"));
@@ -217,7 +215,7 @@ namespace RegressionTests.API
       [Description("Test to create a simple message with a HTML body and a plain text body.")]
       public void TestMailCreationHTMLAndPlainTextReverse()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
          var message = new hMailServer.Message();
          message.AddRecipient("", account.Address);
@@ -225,10 +223,10 @@ namespace RegressionTests.API
          message.HTMLBody = "HTMLBody";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: multipart/alternative"));
          Assert.IsFalse(header.Contains("Content-Transfer-Encoding: quoted-printable"));
@@ -240,17 +238,17 @@ namespace RegressionTests.API
       [Description("Test to create a simple message with a body.")]
       public void TestMailCreationPlainText()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
          var message = new hMailServer.Message();
          message.AddRecipient("", account.Address);
          message.Body = "Hello";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: text/plain; charset=\"utf-8\""));
          Assert.IsTrue(header.Contains("Content-Transfer-Encoding: quoted-printable"));
@@ -261,9 +259,9 @@ namespace RegressionTests.API
       [Description("Test to create a simple message with a HTML body and a plain text body.")]
       public void TestMailCreationUnicodeAndAttachment()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
-         string filename = Path.Combine(Path.GetTempPath(), "dummy.txt");
+         var filename = Path.Combine(Path.GetTempPath(), "dummy.txt");
          File.WriteAllText(filename, "tjena moss");
 
          var message = new hMailServer.Message();
@@ -275,11 +273,11 @@ namespace RegressionTests.API
          message.Body = "Test of message... 日本語";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
 
-         int headerEnd = messageText.IndexOf("\r\n\r\n");
-         string header = messageText.Substring(0, headerEnd);
+         var headerEnd = messageText.IndexOf("\r\n\r\n");
+         var header = messageText.Substring(0, headerEnd);
 
          Assert.IsTrue(header.Contains("Content-Type: multipart/mixed; charset=\"utf-8\""));
 
@@ -290,7 +288,7 @@ namespace RegressionTests.API
       [Description("Test to create a message with both a plain text and HTML part")]
       public void TestMailCreationUnicodeBodyAndHtml()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
          var message = new hMailServer.Message();
          message.AddRecipient("", account.Address);
@@ -299,7 +297,7 @@ namespace RegressionTests.API
          message.HTMLBody = "Test of message... 日本語";
          message.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText(account.Address, "test");
 
          Assert.IsTrue(messageText.Contains("Content-Type: text/html; charset=\"utf-8\""));
          Assert.IsTrue(messageText.Contains("Content-Type: text/plain; charset=\"utf-8\""));
@@ -310,34 +308,34 @@ namespace RegressionTests.API
          "Test to update a subject in a message with no message-wide character set (should default to utf-8)")]
       public void TestUpdateSubjectOnMessageWithNoMessageWideCharacterSet()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "encode@example.test", "test");
 
-         string script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
-                         " message.Subject = \"[ov]\" + message.Subject " + Environment.NewLine +
-                         " message.Save() " + Environment.NewLine +
-                         "End Sub" + Environment.NewLine + Environment.NewLine;
+         var script = "Sub OnAcceptMessage(oClient, message) " + Environment.NewLine +
+                      " message.Subject = \"[ov]\" + message.Subject " + Environment.NewLine +
+                      " message.Save() " + Environment.NewLine +
+                      "End Sub" + Environment.NewLine + Environment.NewLine;
 
-         Scripting scripting = _settings.Scripting;
+         var scripting = _settings.Scripting;
          File.WriteAllText(scripting.CurrentScriptFile, script);
          scripting.Enabled = true;
          scripting.Reload();
          Assert.IsEmpty(scripting.CheckSyntax());
 
-         string body = @"From: <test@example.com>" + Environment.NewLine +
-                       "Subject: =?windows-1251?B?yuDr7Pvq7uLzIMji4O3zIC0g7/Do7OXwICLy5fXt6Pfl8eru4+4g8OX4?=" +
-                       Environment.NewLine +
-                       "   =?windows-1251?B?5e3o/yIgW0Z3ZDog0tAg4uXw8ejoIDEuMl0=?=" + Environment.NewLine +
-                       Environment.NewLine +
-                       "Hej!" + Environment.NewLine;
+         var body = @"From: <test@example.com>" + Environment.NewLine +
+                    "Subject: =?windows-1251?B?yuDr7Pvq7uLzIMji4O3zIC0g7/Do7OXwICLy5fXt6Pfl8eru4+4g8OX4?=" +
+                    Environment.NewLine +
+                    "   =?windows-1251?B?5e3o/yIgW0Z3ZDog0tAg4uXw8ejoIDEuMl0=?=" + Environment.NewLine +
+                    Environment.NewLine +
+                    "Hej!" + Environment.NewLine;
 
 
-         SmtpClientSimulator.StaticSendRaw("encode@test.com", "encode@test.com", body);
+         SmtpClientSimulator.StaticSendRaw("encode@example.test", "encode@example.test", body);
 
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
          CustomAsserts.AssertFolderMessageCount(account.IMAPFolders[0], 1);
 
-         string subject = account.IMAPFolders[0].Messages[0].Subject;
+         var subject = account.IMAPFolders[0].Messages[0].Subject;
       }
    }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
+﻿using System.Threading;
 using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Shared;
@@ -11,8 +8,6 @@ namespace RegressionTests.SSL.StartTls
    [TestFixture]
    public class Pop3ServerTests : TestFixtureBase
    {
-      private hMailServer.Account _account;
-
       [OneTimeSetUp]
       public new void TestFixtureSetUp()
       {
@@ -24,8 +19,10 @@ namespace RegressionTests.SSL.StartTls
       [SetUp]
       public new void SetUp()
       {
-         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         _account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
+
+      private Account _account;
 
       [Test]
       public void IfStartTlsNotEnabledStartTlsShouldNotBeShownInEhloResponse()
@@ -67,7 +64,6 @@ namespace RegressionTests.SSL.StartTls
 
          // run over TLS.
          pop3Simulator.HELP();
-
       }
 
       [Test]
@@ -81,7 +77,7 @@ namespace RegressionTests.SSL.StartTls
          pop3Simulator.Handshake();
 
          // run over TLS.
-         var result = pop3Simulator.User("test@test.com");
+         var result = pop3Simulator.User("test@example.test");
          Assert.IsTrue(result.StartsWith("+OK"));
       }
 
@@ -94,14 +90,15 @@ namespace RegressionTests.SSL.StartTls
          pop3Simulator.ReceiveBanner(out banner);
 
          // run over TLS.
-         var result = pop3Simulator.User("test@test.com");
+         var result = pop3Simulator.User("test@example.test");
          Assert.IsTrue(result.StartsWith("-ERR STLS is required."));
       }
 
       [Test]
       public void IfStlsOptionalButSslRequiredByIpRangeForAuthThenAuthShouldFail()
       {
-         var range = SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges.get_ItemByName("My computer");
+         var range = SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges
+            .get_ItemByName("My computer");
          range.RequireSSLTLSForAuth = true;
          range.Save();
 
@@ -111,7 +108,7 @@ namespace RegressionTests.SSL.StartTls
          pop3Simulator.ReceiveBanner(out banner);
 
          // run over TLS.
-         var result = pop3Simulator.User("test@test.com");
+         var result = pop3Simulator.User("test@example.test");
          Assert.IsTrue(result.StartsWith("-ERR A SSL/TLS-connection is required for authentication."));
       }
    }

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure.Persistence
 {
@@ -16,7 +15,7 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestAccount()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "perste'ster@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "perste'ster@example.test", "test");
          if (account1.ID == 0)
             throw new Exception("Account not properly saved");
 
@@ -26,7 +25,7 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestAlias()
       {
-         Alias alias = SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "fr'om@test.com", "to@t'st.com");
+         var alias = SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "fr'om@example.test", "to@t'st.com");
          if (alias.ID == 0)
             throw new Exception("Account not properly saved");
 
@@ -36,8 +35,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestBlockedAttachment()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         BlockedAttachment attachment = settings.AntiVirus.BlockedAttachments.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var attachment = settings.AntiVirus.BlockedAttachments.Add();
 
          attachment.Description = "Some description";
          attachment.Wildcard = "*.some";
@@ -53,59 +52,59 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestCaseInsensitivtyAccount()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@test.com", "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@example.test", "test");
 
          var smtpClientSimulator = new SmtpClientSimulator();
-         string upperCase = testAccount.Address.ToUpper();
+         var upperCase = testAccount.Address.ToUpper();
          smtpClientSimulator.Send("someone@dummy-example.com", upperCase, "test mail", "test body");
 
-         Pop3ClientSimulator.AssertMessageCount("lowercase@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("lowercase@example.test", "test", 1);
       }
 
       [Test]
       public void TestCaseInsensitivtyAlias()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@test.com", "test");
-         Alias testAlias = SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "sometext@test.com",
-                                                                          "LowerCase@test.com");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@example.test", "test");
+         var testAlias = SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "sometext@example.test",
+            "LowerCase@example.test");
 
          var smtpClientSimulator = new SmtpClientSimulator();
-         string upperCase = testAlias.Name.ToUpper();
+         var upperCase = testAlias.Name.ToUpper();
          smtpClientSimulator.Send("someone@dummy-example.com", upperCase, "test mail", "test body");
 
-         Pop3ClientSimulator.AssertMessageCount("lowercase@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("lowercase@example.test", "test", 1);
       }
 
       [Test]
       public void TestCaseInsensitivtyList()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@test.com", "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@example.test", "test");
 
          var recipients = new List<string>();
          recipients.Add(testAccount.Address);
 
-         DistributionList list = SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "myList@test.com",
-                                                                                           recipients);
+         var list = SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "myList@example.test",
+            recipients);
 
          var smtpClientSimulator = new SmtpClientSimulator();
-         string upperCase = list.Address.ToUpper();
+         var upperCase = list.Address.ToUpper();
          smtpClientSimulator.Send("someone@dummy-example.com", upperCase, "test mail", "test body");
 
-         Pop3ClientSimulator.AssertMessageCount("lowercase@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("lowercase@example.test", "test", 1);
       }
 
       [Test]
       public void TestCaseInsensitivtyListRecipient()
       {
-         Account testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@test.com", "test");
+         var testAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "lowercase@example.test", "test");
 
          var recipients = new List<string>();
          recipients.Add(testAccount.Address);
 
-         DistributionList list = SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "myList@test.com",
-                                                                                           recipients);
+         var list = SingletonProvider<TestSetup>.Instance.AddDistributionList(_domain, "myList@example.test",
+            recipients);
 
-         DistributionListRecipient recipient = list.Recipients[0];
+         var recipient = list.Recipients[0];
          recipient.RecipientAddress = testAccount.Address.ToUpper();
          recipient.Delete();
       }
@@ -113,8 +112,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDNSBlackList()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         DNSBlackList dnsBlackList = settings.AntiSpam.DNSBlackLists.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var dnsBlackList = settings.AntiSpam.DNSBlackLists.Add();
 
          dnsBlackList.DNSHost = "somehost.com";
          dnsBlackList.RejectMessage = "somerejectmessage";
@@ -131,16 +130,16 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDistributionList()
       {
-         DistributionList list = _domain.DistributionLists.Add();
-         list.Address = "persis'tent-test-list@test.com";
+         var list = _domain.DistributionLists.Add();
+         list.Address = "persis'tent-test-list@example.test";
          list.Active = true;
          list.Save();
 
-         DistributionListRecipient recipient = list.Recipients.Add();
+         var recipient = list.Recipients.Add();
          recipient.RecipientAddress = "test@te'st.com";
          recipient.Save();
 
-         recipient.RecipientAddress = "tes't2@test.com";
+         recipient.RecipientAddress = "tes't2@example.test";
          recipient.Save();
          list.Delete();
       }
@@ -148,7 +147,7 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDomain()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
          _domain = SingletonProvider<TestSetup>.Instance.AddDomain(domains, "test2.com");
          if (_domain.ID == 0)
             throw new Exception("Domain not properly saved");
@@ -159,7 +158,7 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDomainRenaming()
       {
-         Domains domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
+         var domains = SingletonProvider<TestSetup>.Instance.GetApp().Domains;
          _domain = SingletonProvider<TestSetup>.Instance.AddDomain(domains, "test2.com");
 
          // Add a few accounts
@@ -198,27 +197,27 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestDomainWithLargeAccounts()
       {
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddDomain("example.com");
+         var domain = SingletonProvider<TestSetup>.Instance.AddDomain("example.com");
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(domain.Accounts, "test1@example.com",
-                                                                            "secret");
-         account.MaxSize = 1024*1024*2000;
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(domain.Accounts, "test1@example.com",
+            "secret");
+         account.MaxSize = 1024 * 1024 * 2000;
          account.Save();
 
-         Account secondAccount = SingletonProvider<TestSetup>.Instance.AddAccount(domain.Accounts,
-                                                                                  "test2@example.com", "secret");
-         secondAccount.MaxSize = 1024*1024*2000;
+         var secondAccount = SingletonProvider<TestSetup>.Instance.AddAccount(domain.Accounts,
+            "test2@example.com", "secret");
+         secondAccount.MaxSize = 1024 * 1024 * 2000;
          secondAccount.Save();
 
-         Assert.AreEqual(account.MaxSize + (long) secondAccount.MaxSize, domain.AllocatedSize);
+         Assert.AreEqual(account.MaxSize + (long)secondAccount.MaxSize, domain.AllocatedSize);
       }
 
       [Test]
       public void TestFetchAccount()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "fatester@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "fatester@example.test", "test");
 
-         FetchAccount fetchAccount = account1.FetchAccounts.Add();
+         var fetchAccount = account1.FetchAccounts.Add();
          fetchAccount.Name = "test";
          fetchAccount.Save();
 
@@ -231,8 +230,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestGroup()
       {
-         Groups groups = _application.Settings.Groups;
-         Group group = groups.Add();
+         var groups = _application.Settings.Groups;
+         var group = groups.Add();
          group.Name = "MyGroup";
          group.Save();
 
@@ -248,16 +247,16 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestGroupMember()
       {
-         Groups groups = _application.Settings.Groups;
+         var groups = _application.Settings.Groups;
 
-         Group group = groups.Add();
+         var group = groups.Add();
          group.Name = "MyGroup";
          group.Save();
 
          if (group.ID == 0)
             throw new Exception("Group not properly saved");
 
-         GroupMember member = group.Members.Add();
+         var member = group.Members.Add();
          member.AccountID = 1;
          member.Save();
 
@@ -268,10 +267,10 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestIncomingRelays()
       {
-         IncomingRelays incomingRelays = _application.Settings.IncomingRelays;
+         var incomingRelays = _application.Settings.IncomingRelays;
          Assert.AreEqual(0, incomingRelays.Count);
 
-         IncomingRelay incomingRelay = incomingRelays.Add();
+         var incomingRelay = incomingRelays.Add();
          incomingRelay.Name = "TestRelay";
          incomingRelay.LowerIP = "1.2.1.1";
          incomingRelay.UpperIP = "2.1.2.1";
@@ -282,7 +281,7 @@ namespace RegressionTests.Infrastructure.Persistence
 
          // Confirm that settings were saved properly.
          incomingRelays.Refresh();
-         IncomingRelay incomingRelay2 = incomingRelays.get_ItemByDBID(incomingRelay.ID);
+         var incomingRelay2 = incomingRelays.get_ItemByDBID(incomingRelay.ID);
          Assert.AreEqual(incomingRelay.ID, incomingRelay2.ID);
          Assert.AreEqual(incomingRelay.Name, incomingRelay2.Name);
          Assert.AreEqual(incomingRelay.LowerIP, incomingRelay2.LowerIP);
@@ -297,29 +296,29 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestRenameAccountOrDomainWithMessagesWithFullPath()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Test message", "Test body");
 
-         IMAPFolder folder = account.IMAPFolders.get_ItemByName("Inbox");
+         var folder = account.IMAPFolders.get_ItemByName("Inbox");
          CustomAsserts.AssertFolderMessageCount(folder, 1);
-         Message message = account.IMAPFolders.get_ItemByName("Inbox").Messages[0];
+         var message = account.IMAPFolders.get_ItemByName("Inbox").Messages[0];
 
          // Move the message file to another folder.
-         string domainPath = Path.Combine(_application.Settings.Directories.DataDirectory, _domain.Name);
-         string accountPath = Path.Combine(domainPath, "test");
-         string fileName = Path.Combine(accountPath, "randomMail.eml");
+         var domainPath = Path.Combine(_application.Settings.Directories.DataDirectory, _domain.Name);
+         var accountPath = Path.Combine(domainPath, "test");
+         var fileName = Path.Combine(accountPath, "randomMail.eml");
          File.Move(message.Filename, fileName);
 
          // Update the database with the full path.
-         string sql = string.Format("update hm_messages set messagefilename = '{0}' where messageid = {1}",
-                                    TestSetup.Escape(fileName), message.ID);
+         var sql = string.Format("update hm_messages set messagefilename = '{0}' where messageid = {1}",
+            TestSetup.Escape(fileName), message.ID);
          SingletonProvider<TestSetup>.Instance.GetApp().Database.ExecuteSQL(sql);
 
          SingletonProvider<TestSetup>.Instance.GetApp().Settings.Cache.Clear();
 
          // Now try to change the name of the domain or account. Should fail.
-         account.Address = "test2@test.com";
-         bool thrown = false;
+         account.Address = "test2@example.test";
+         var thrown = false;
 
          try
          {
@@ -333,7 +332,7 @@ namespace RegressionTests.Infrastructure.Persistence
          Assert.IsTrue(thrown);
 
          // Saving account is OK, unless its address is changed.
-         account.Address = "test@test.com";
+         account.Address = "test@example.test";
          account.Save();
 
          thrown = false;
@@ -352,7 +351,7 @@ namespace RegressionTests.Infrastructure.Persistence
          Assert.IsTrue(thrown);
 
          // Saving domain is OK, unless its address is changed.
-         _domain.Name = "test.com";
+         _domain.Name = "example.test";
          _domain.Save();
 
          _domain.Delete();
@@ -361,16 +360,16 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestRenameAccountWithMessages()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
 
-         string messageBody = Guid.NewGuid().ToString();
+         var messageBody = Guid.NewGuid().ToString();
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Subj", messageBody);
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
-         account.Address = "account2@test.com";
+         account.Address = "account2@example.test";
          account.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText("account2@test.com", "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText("account2@example.test", "test");
          Assert.IsTrue(messageText.Contains(messageBody), messageText);
       }
 
@@ -378,11 +377,11 @@ namespace RegressionTests.Infrastructure.Persistence
       [Description("Issue 343, Changing domain name doesn't change distribution list addresses")]
       public void TestRenameDomainWithAccountForward()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         account1.ForwardAddress = "someone@test.com";
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         account1.ForwardAddress = "someone@example.test";
          account1.Save();
 
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@test.com", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@example.test", "test");
          account2.ForwardAddress = "someone@external.com";
          account2.Save();
 
@@ -397,31 +396,31 @@ namespace RegressionTests.Infrastructure.Persistence
       [Description("Issue 343, Changing domain name doesn't change distribution list addresses")]
       public void TestRenameDomainWithAliases()
       {
-         Alias alias1 = _domain.Aliases.Add();
-         alias1.Name = "alias1@test.com";
-         alias1.Value = "alias2@test.com";
+         var alias1 = _domain.Aliases.Add();
+         alias1.Name = "alias1@example.test";
+         alias1.Value = "alias2@example.test";
          alias1.Save();
 
-         Alias alias2 = _domain.Aliases.Add();
-         alias2.Name = "alias2@test.com";
-         alias2.Value = "account@test.com";
+         var alias2 = _domain.Aliases.Add();
+         alias2.Name = "alias2@example.test";
+         alias2.Value = "account@example.test";
          alias2.Save();
 
-         Alias alias3 = _domain.Aliases.Add();
-         alias3.Name = "alias3@test.com";
+         var alias3 = _domain.Aliases.Add();
+         alias3.Name = "alias3@example.test";
          alias3.Value = "external@external.com";
          alias3.Save();
 
-         _domain.Name = "example.com";
+         _domain.Name = "new1.example.com";
          _domain.Save();
 
-         Assert.AreEqual("alias1@example.com", _domain.Aliases[0].Name);
-         Assert.AreEqual("alias2@example.com", _domain.Aliases[0].Value);
+         Assert.AreEqual("alias1@new1.example.com", _domain.Aliases[0].Name);
+         Assert.AreEqual("alias2@new1.example.com", _domain.Aliases[0].Value);
 
-         Assert.AreEqual("alias2@example.com", _domain.Aliases[1].Name);
-         Assert.AreEqual("account@example.com", _domain.Aliases[1].Value);
+         Assert.AreEqual("alias2@new1.example.com", _domain.Aliases[1].Name);
+         Assert.AreEqual("account@new1.example.com", _domain.Aliases[1].Value);
 
-         Assert.AreEqual("alias3@example.com", _domain.Aliases[2].Name);
+         Assert.AreEqual("alias3@new1.example.com", _domain.Aliases[2].Name);
          Assert.AreEqual("external@external.com", _domain.Aliases[2].Value);
       }
 
@@ -429,56 +428,56 @@ namespace RegressionTests.Infrastructure.Persistence
       [Description("Issue 343, Changing domain name doesn't change distribution list addresses")]
       public void TestRenameDomainWithList()
       {
-         DistributionList list1 = _domain.DistributionLists.Add();
-         list1.Address = "list@test.com";
+         var list1 = _domain.DistributionLists.Add();
+         list1.Address = "list@example.test";
          list1.Active = true;
          list1.Save();
 
-         DistributionListRecipient recipient = list1.Recipients.Add();
-         recipient.RecipientAddress = "recipient1@test.com";
+         var recipient = list1.Recipients.Add();
+         recipient.RecipientAddress = "recipient1@example.test";
          recipient.Save();
 
          recipient = list1.Recipients.Add();
-         recipient.RecipientAddress = "recipient2@Test.com";
+         recipient.RecipientAddress = "recipient2@Example.test";
          recipient.Save();
 
          recipient = list1.Recipients.Add();
-         recipient.RecipientAddress = "recipient3@otherdomain.com";
+         recipient.RecipientAddress = "recipient3@otherdomain.example.test";
          recipient.Save();
 
-         _domain.Name = "example.com";
+         _domain.Name = "new2.example.com";
          _domain.Save();
 
-         DistributionList list = _domain.DistributionLists[0];
-         Assert.AreEqual("list@example.com", list.Address);
-         Assert.AreEqual("recipient1@example.com", list.Recipients[0].RecipientAddress);
-         Assert.AreEqual("recipient2@example.com", list.Recipients[1].RecipientAddress);
-         Assert.AreEqual("recipient3@otherdomain.com", list.Recipients[2].RecipientAddress);
+         var list = _domain.DistributionLists[0];
+         Assert.AreEqual("list@new2.example.com", list.Address);
+         Assert.AreEqual("recipient1@new2.example.com", list.Recipients[0].RecipientAddress);
+         Assert.AreEqual("recipient2@new2.example.com", list.Recipients[1].RecipientAddress);
+         Assert.AreEqual("recipient3@otherdomain.example.test", list.Recipients[2].RecipientAddress);
       }
 
       [Test]
       public void TestRenameDomainWithMessages()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         account.ForwardAddress = "someone@test.com";
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         account.ForwardAddress = "someone@example.test";
          account.Save();
 
-         string messageBody = Guid.NewGuid().ToString();
+         var messageBody = Guid.NewGuid().ToString();
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Subj", messageBody);
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
-         _domain.Name = "example.com";
+         _domain.Name = "new3.example.com";
          _domain.Save();
 
-         string messageText = Pop3ClientSimulator.AssertGetFirstMessageText("account1@example.com", "test");
+         var messageText = Pop3ClientSimulator.AssertGetFirstMessageText("account1@new3.example.com", "test");
          Assert.IsTrue(messageText.Contains(messageBody), messageText);
       }
 
       [Test]
       public void TestRoute()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         Route route = settings.Routes.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var route = settings.Routes.Add();
 
          route.DomainName = "myroute.com";
          route.TargetSMTPHost = "somehost.com";
@@ -496,8 +495,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestSSLCertificate()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         SSLCertificate sslcert = settings.SSLCertificates.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var sslcert = settings.SSLCertificates.Add();
 
          sslcert.CertificateFile = "somefile.dat";
          sslcert.PrivateKeyFile = "someprivatefile.dat";
@@ -512,8 +511,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestSURBLServer()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         SURBLServer surblServer = settings.AntiSpam.SURBLServers.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var surblServer = settings.AntiSpam.SURBLServers.Add();
 
          surblServer.DNSHost = "somehost.com";
          surblServer.RejectMessage = "somerejectmessage";
@@ -530,8 +529,8 @@ namespace RegressionTests.Infrastructure.Persistence
       [Test]
       public void TestWhiteListAddress()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         WhiteListAddress whiteAddress = settings.AntiSpam.WhiteListAddresses.Add();
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var whiteAddress = settings.AntiSpam.WhiteListAddresses.Add();
 
          whiteAddress.Description = "My description of this entry";
          whiteAddress.EmailAddress = "myaddress@dummy-example.com";

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO.Ports;
 using System.Text;
 using System.Threading;
 using hMailServer;
@@ -31,16 +30,11 @@ namespace RegressionTests.Shared
       private bool _expectingUsername;
       private bool _hasMailFrom;
       private int _mailFromresult = 250;
-      private string _messageData = "";
       private int _quitResult = 221;
 
-      private SimulatedErrorType _simulatedError;
       private bool _transmittingData;
 
-      public bool ServerSupportsEhlo { get; set; }
-      public bool ServerSupportsHelo { get; set; }
 
-      
       public SmtpServerSimulator(int maxNumberOfConnections, int port, eConnectionSecurity connectionSecurity) :
          base(maxNumberOfConnections, port, connectionSecurity)
       {
@@ -52,31 +46,26 @@ namespace RegressionTests.Shared
       public SmtpServerSimulator(int maxNumberOfConnections, int port) :
          this(maxNumberOfConnections, port, eConnectionSecurity.eCSNone)
       {
-         
       }
+
+      public bool ServerSupportsEhlo { get; set; }
+      public bool ServerSupportsHelo { get; set; }
 
       public int RcptTosReceived { get; set; }
 
       public int QuitResult
       {
-         set { _quitResult = value; }
+         set => _quitResult = value;
       }
 
-      public SimulatedErrorType SimulatedError
-      {
-         set { _simulatedError = value; }
-         get { return _simulatedError; }
-      }
+      public SimulatedErrorType SimulatedError { set; get; }
 
       public int MailFromResult
       {
-         set { _mailFromresult = value; }
+         set => _mailFromresult = value;
       }
 
-      public string MessageData
-      {
-         get { return _messageData; }
-      }
+      public string MessageData { get; private set; } = "";
 
       public void AddRecipientResult(Dictionary<string, int> result)
       {
@@ -106,12 +95,12 @@ namespace RegressionTests.Shared
 
          while (true)
          {
-            string text = ReadUntil("\r\n");
+            var text = ReadUntil("\r\n");
 
             if (string.IsNullOrEmpty(text))
                break;
 
-            bool quit = ProcessCommand(text);
+            var quit = ProcessCommand(text);
 
             if (quit)
                break;
@@ -126,16 +115,14 @@ namespace RegressionTests.Shared
             Send("250 Test Server - Helo\r\n");
             return false;
          }
-                 
+
          if (ServerSupportsEhlo && command.ToUpper().StartsWith("EHLO"))
          {
-            var response = new StringBuilder(); 
-            
+            var response = new StringBuilder();
+
             if (_connectionSecurity == eConnectionSecurity.eCSSTARTTLSRequired ||
                 _connectionSecurity == eConnectionSecurity.eCSSTARTTLSOptional)
-            {
                response.AppendLine("250-STARTTLS");
-            }
 
             response.AppendLine("250 AUTH LOGIN PLAIN");
 
@@ -173,7 +160,7 @@ namespace RegressionTests.Shared
                return false;
             }
 
-            Send(_mailFromresult.ToString() + "\r\n");
+            Send(_mailFromresult + "\r\n");
 
             if (_mailFromresult == 250)
                _hasMailFrom = true;
@@ -188,19 +175,20 @@ namespace RegressionTests.Shared
                Send("503 must have sender first.\r\n");
                return false;
             }
-            int StartPos = command.IndexOf("<") + 1;
-            int EndPos = command.LastIndexOf(">");
-            int length = EndPos - StartPos;
 
-            string address = command.Substring(StartPos, length);
+            var StartPos = command.IndexOf("<") + 1;
+            var EndPos = command.LastIndexOf(">");
+            var length = EndPos - StartPos;
+
+            var address = command.Substring(StartPos, length);
 
             if (!_currentRecipientResult.ContainsKey(address))
                throw new Exception("Unexpected address");
 
-            string result = _currentRecipientResult[address].ToString();
+            var result = _currentRecipientResult[address].ToString();
 
             Send(result + " " + address + "\r\n");
-            
+
             RcptTosReceived++;
 
             return false;
@@ -210,16 +198,14 @@ namespace RegressionTests.Shared
          {
             Send("354 Test Server - Give it to me...\r\n");
             _transmittingData = true;
-            _messageData = "";
+            MessageData = "";
             return false;
          }
 
          if (command.ToUpper().StartsWith("QUIT"))
          {
-            if (_simulatedError != SimulatedErrorType.DisconnectWithoutReplyOnQuit)
-            {
-               Send(_quitResult.ToString() + " Test Server - Goodbye\r\n");
-            }
+            if (SimulatedError != SimulatedErrorType.DisconnectWithoutReplyOnQuit)
+               Send(_quitResult + " Test Server - Goodbye\r\n");
 
             Disconnect();
 
@@ -228,23 +214,23 @@ namespace RegressionTests.Shared
 
          if (_transmittingData)
          {
-            if (_simulatedError == SimulatedErrorType.DisconnectAfterDeliveryStarted)
+            if (SimulatedError == SimulatedErrorType.DisconnectAfterDeliveryStarted)
             {
                // We've received some message data. Disconenct!
                Disconnect();
                return true;
             }
-            
-            _messageData += command;
 
-            if (_messageData.IndexOf("\r\n.\r\n") > 0)
+            MessageData += command;
+
+            if (MessageData.IndexOf("\r\n.\r\n") > 0)
             {
                // remove the ending...
-               _messageData = _messageData.Replace("\r\n.\r\n", "\r\n");
+               MessageData = MessageData.Replace("\r\n.\r\n", "\r\n");
 
                Send("250 Test Server - Queued for delivery\r\n");
 
-               if (_simulatedError == SimulatedErrorType.DisconnectAfterMessageAccept)
+               if (SimulatedError == SimulatedErrorType.DisconnectAfterMessageAccept)
                {
                   Disconnect();
                   return true;
@@ -256,7 +242,7 @@ namespace RegressionTests.Shared
 
             return false;
          }
-         
+
          if (_expectingUsername)
          {
             _expectingUsername = false;

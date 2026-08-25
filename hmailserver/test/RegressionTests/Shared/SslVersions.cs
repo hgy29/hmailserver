@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RegressionTests.Shared
+﻿namespace RegressionTests.Shared
 {
    public class SslVersions
    {

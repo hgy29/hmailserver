@@ -46,11 +46,11 @@ namespace HM
 {
    POP3ClientConnection::POP3ClientConnection(std::shared_ptr<FetchAccount> pAccount,
                                               ConnectionSecurity connectionSecurity,
-                                              boost::asio::io_service& io_service, 
+                                              boost::asio::io_context& io_context, 
                                               boost::asio::ssl::context& context,
                                               std::shared_ptr<Event> disconnected,
                                               AnsiString remote_hostname) :
-      TCPConnection(connectionSecurity, io_service, context, disconnected, remote_hostname),
+      TCPConnection(connectionSecurity, io_context, context, disconnected, remote_hostname),
       account_(pAccount),
       current_state_(StateConnected)
    {
@@ -754,6 +754,12 @@ namespace HM
       // The entire message has now been downloaded from the
       // remote POP3 server. Save it in the database and deliver
       // it to the account.
+
+      // Release the handle to the message file first. The message file is read and
+      // delivered below, which requires that we no longer keep it open for writing.
+      if (transmission_buffer_)
+         transmission_buffer_->Close();
+
       String fileName = PersistentMessage::GetFileName(current_message_);
       current_message_->SetSize(FileUtilities::FileSize(fileName));
 
@@ -835,17 +841,25 @@ namespace HM
       setSpamTestResults.insert(setResult.begin(), setResult.end());
       
       int iTotalSpamScore = SpamProtection::CalculateTotalSpamScore(setSpamTestResults);
+      int iSpamDeleteThreshold = Configuration::Instance()->GetAntiSpamConfiguration().GetSpamDeleteThreshold();
+      int iSpamMarkThreshold = Configuration::Instance()->GetAntiSpamConfiguration().GetSpamMarkThreshold();
 
-      if (iTotalSpamScore >= Configuration::Instance()->GetAntiSpamConfiguration().GetSpamDeleteThreshold())
+      if (iSpamDeleteThreshold > 0 && iTotalSpamScore >= iSpamDeleteThreshold)
       {
+         // Increase the spam-counter
+         ServerStatus::Instance()->OnSpamMessageDetected();
+
          FileUtilities::DeleteFile(fileName);
          return false;
       }
       
-      bool classifiedAsSpam = iTotalSpamScore >= Configuration::Instance()->GetAntiSpamConfiguration().GetSpamMarkThreshold();
-      
+      bool classifiedAsSpam = iSpamMarkThreshold > 0 && iTotalSpamScore >= iSpamMarkThreshold;
+
       if (classifiedAsSpam)
       {
+         // Set message SPAM Flag
+         current_message_->SetFlagSpam(classifiedAsSpam);
+
          std::shared_ptr<MessageData> messageData = SpamProtection::AddSpamScoreHeaders(current_message_, setSpamTestResults, classifiedAsSpam);
          
          // Increase the spam-counter

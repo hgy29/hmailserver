@@ -92,7 +92,9 @@ create table hm_accounts
 	accountvacationexpires tinyint unsigned not null,
 	accountvacationexpiredate datetime not null,
 	accountpersonfirstname varchar(60) not null,
-	accountpersonlastname varchar(60) not null
+	accountpersonlastname varchar(60) not null,
+	accountvacationabortspamflagged tinyint not null,
+	accountforwardabortspamflagged tinyint not null
 ) DEFAULT CHARSET=utf8;
 
 CREATE INDEX idx_hm_accounts ON hm_accounts (accountaddress);
@@ -155,7 +157,7 @@ create table hm_messages
 	messagesize bigint not null,
 	messagecurnooftries int not null,
 	messagenexttrytime datetime not null,
-	messageflags tinyint not null,
+	messageflags tinyint unsigned not null,
 	messagecreatetime datetime not null,
 	messagelocked tinyint not null,
    messageuid bigint not null
@@ -236,7 +238,8 @@ create table hm_imapfolders
   foldername varchar(255) NOT NULL,
   folderissubscribed tinyint unsigned NOT NULL,
   foldercreationtime datetime NOT NULL,
-  foldercurrentuid bigint NOT NULL
+  foldercurrentuid bigint NOT NULL,
+  folderspecialuse int NOT NULL
 ) DEFAULT CHARSET=utf8;
 
 CREATE INDEX idx_hm_imapfolders ON hm_imapfolders (folderaccountid);
@@ -368,7 +371,8 @@ create table hm_rule_actions
 	actionscriptfunction varchar(255) not null,
 	actionheader varchar(80) not null,
 	actionvalue varchar(255) not null,
-    actionrouteid int not null
+    actionrouteid int not null,
+	actionabortspamflagged tinyint not null
 ) DEFAULT CHARSET=utf8;
 
 CREATE INDEX idx_rules_actions ON hm_rule_actions (actionruleid);
@@ -763,8 +767,6 @@ insert into hm_settings (settingname, settingstring, settinginteger) values ('Ss
 
 insert into hm_settings (settingname, settingstring, settinginteger) values ('ImapMasterUser', '', 0);
 
-insert into hm_settings (settingname, settingstring, settinginteger) values ('ImapAuthAllowPlainText', '', 0);
-
 insert into hm_settings (settingname, settingstring, settinginteger) values ('EnableImapSASLPlain', '', 0);
 
 insert into hm_settings (settingname, settingstring, settinginteger) values ('EnableImapSASLInitialResponse', '', 0);
@@ -775,6 +777,10 @@ insert into hm_settings (settingname, settingstring, settinginteger) values ('as
 
 insert into hm_settings (settingname, settingstring, settinginteger) values ('IPv6Preferred', '', 0);
 
+insert into hm_settings (settingname, settingstring, settinginteger) values ('TlsOptions', '', 0);
+
+insert into hm_settings (settingname, settingstring, settinginteger) values ('CreateDefaultSpecialUseFolders', '', 1);
+
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 25, 0, NULL, 0, 0);
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (1, 587, 0, NULL, 0, 0);
@@ -783,4 +789,4 @@ insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2,
 
 insert into hm_tcpipports (portprotocol, portnumber, portaddress1, portaddress2, portconnectionsecurity, portsslcertificateid) values (5, 143, 0, NULL, 0, 0);
 
-insert into hm_dbversion values (5704);
+insert into hm_dbversion values (5709);

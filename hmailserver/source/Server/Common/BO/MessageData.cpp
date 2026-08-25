@@ -311,6 +311,12 @@ namespace HM
       if (!pPart)
          pPart = CreatePart("text/plain");
 
+      if (sBody.IsEmpty())
+      {
+         pPart->SetRawText("");
+         return;
+      }
+
       String sModifiedBody = sBody;
       if (sModifiedBody.Right(2) != _T("\r\n"))
       {
@@ -350,6 +356,12 @@ namespace HM
       {
          // Create a new part.
          pHTMLPart = CreatePart("text/html");
+      }
+
+      if (sNewVal.IsEmpty())
+      {
+         pHTMLPart->SetRawText("");
+         return;
       }
 
       String sModifiedBody = sNewVal;
@@ -844,15 +856,15 @@ namespace HM
       // Add recipient
       bool recipientOK = false;
       RecipientParser recipientParser;
-      recipientParser.CreateMessageRecipientList("test@test.com", pMessage->GetRecipients(), recipientOK);
+      recipientParser.CreateMessageRecipientList("test@example.test", pMessage->GetRecipients(), recipientOK);
 
       std::shared_ptr<Account> account;
 
       // Create message data structure
       std::shared_ptr<MessageData> pMsgData = std::shared_ptr<MessageData>(new MessageData());
       pMsgData->LoadFromMessage(account, pMessage);
-      pMsgData->SetTo("test@test.com");
-      pMsgData->SetFrom("test@test.com");
+      pMsgData->SetTo("test@example.test");
+      pMsgData->SetFrom("test@example.test");
       pMsgData->SetSubject("Hejsan");
       pMsgData->SetFieldValue("MIME-Version", "1.0");
       

@@ -5,29 +5,25 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure
 {
    [TestFixture]
    public class BackupRestore : TestFixtureBase
    {
-      #region Setup/Teardown
-
       [SetUp]
       public new void SetUp()
       {
          InitializeBackupSettings();
       }
 
-      #endregion
-
       private string _backupDir;
       private static string _folderCreationTime;
       private bool _backupMessages = true;
-      private int _fetchAccountPort = TestSetup.GetNextFreePort();
+      private readonly int _fetchAccountPort = TestSetup.GetNextFreePort();
 
       public void InitializeBackupSettings()
       {
@@ -67,21 +63,18 @@ namespace RegressionTests.Infrastructure
       {
          Assert.IsNotNull(_application);
 
-         for (int i = 0; i < 40; i++)
+         for (var i = 0; i < 40; i++)
          {
             try
             {
-               string logFile = _application.Settings.Backup.LogFile;
+               var logFile = _application.Settings.Backup.LogFile;
 
-               string contents = TestSetup.ReadExistingTextFile(logFile);
+               var contents = TestSetup.ReadExistingTextFile(logFile);
 
                if (contents.IndexOf("Backup completed successfully") > 0)
                   return true;
 
-               if (contents.IndexOf("BACKUP ERROR:") > 0)
-               {
-                  return false;
-               }
+               if (contents.IndexOf("BACKUP ERROR:") > 0) return false;
             }
             catch (Exception)
             {
@@ -98,11 +91,11 @@ namespace RegressionTests.Infrastructure
       {
          Assert.IsNotNull(_application);
 
-         for (int i = 0; i < 600; i++)
+         for (var i = 0; i < 600; i++)
          {
             try
             {
-               string startTime = _application.Status.StartTime;
+               var startTime = _application.Status.StartTime;
 
                if (startTime.Length > 0 && startTime != lastServerStartTime)
                   return;
@@ -121,9 +114,9 @@ namespace RegressionTests.Infrastructure
       public void SetupEnvironment()
       {
          // Set up the domain. It's already set-up...
-         Domain domain = _application.Domains[0];
+         var domain = _application.Domains[0];
          Assert.IsNotNull(domain);
-         Assert.AreEqual("test.com", domain.Name);
+         Assert.AreEqual("example.test", domain.Name);
 
          SetupDomainObject(domain);
          SetupDomainObjects(domain);
@@ -146,7 +139,7 @@ namespace RegressionTests.Infrastructure
 
       private void SetupSSLCertificates()
       {
-         SSLCertificate cert = _application.Settings.SSLCertificates.Add();
+         var cert = _application.Settings.SSLCertificates.Add();
          cert.CertificateFile = "file1.txt";
          cert.Name = "name1";
          cert.PrivateKeyFile = "pk1";
@@ -161,7 +154,7 @@ namespace RegressionTests.Infrastructure
 
       private void SetupBlockedAttachment()
       {
-         BlockedAttachment ba = _application.Settings.AntiVirus.BlockedAttachments.Add();
+         var ba = _application.Settings.AntiVirus.BlockedAttachments.Add();
          ba.Description = "My description";
          ba.Wildcard = "*.my";
          ba.Save();
@@ -169,7 +162,7 @@ namespace RegressionTests.Infrastructure
 
       private void SetupDNSBlackLists()
       {
-         DNSBlackList black = _application.Settings.AntiSpam.DNSBlackLists.Add();
+         var black = _application.Settings.AntiSpam.DNSBlackLists.Add();
          black.Active = true;
          black.DNSHost = "127.0.0.1";
          black.ExpectedResult = "127.5.2.1";
@@ -188,7 +181,7 @@ namespace RegressionTests.Infrastructure
 
       private void SetupIncomingRelay()
       {
-         IncomingRelay relay = _application.Settings.IncomingRelays.Add();
+         var relay = _application.Settings.IncomingRelays.Add();
          relay.Name = "Test";
          relay.LowerIP = "1.2.3.4";
          relay.UpperIP = "4.3.2.1";
@@ -198,7 +191,7 @@ namespace RegressionTests.Infrastructure
 
       private void SetupSURBLServers()
       {
-         SURBLServer black = _application.Settings.AntiSpam.SURBLServers.Add();
+         var black = _application.Settings.AntiSpam.SURBLServers.Add();
          black.Active = true;
          black.DNSHost = "127.0.0.1";
          black.RejectMessage = "Test";
@@ -215,9 +208,9 @@ namespace RegressionTests.Infrastructure
 
       private void SetupGreyListingWhiteList()
       {
-         GreyListingWhiteAddresses addresses = _application.Settings.AntiSpam.GreyListingWhiteAddresses;
+         var addresses = _application.Settings.AntiSpam.GreyListingWhiteAddresses;
 
-         GreyListingWhiteAddress address = addresses.Add();
+         var address = addresses.Add();
          address.Description = "helo1";
          address.IPAddress = "1.1.1.1";
          address.Save();
@@ -231,9 +224,9 @@ namespace RegressionTests.Infrastructure
 
       private void SetupWhiteList()
       {
-         WhiteListAddresses addresses = _application.Settings.AntiSpam.WhiteListAddresses;
+         var addresses = _application.Settings.AntiSpam.WhiteListAddresses;
 
-         WhiteListAddress address = addresses.Add();
+         var address = addresses.Add();
          address.Description = "Desc1";
          address.EmailAddress = "Email1";
          address.LowerIPAddress = "1.1.1.1";
@@ -251,9 +244,9 @@ namespace RegressionTests.Infrastructure
 
       private void SetupRoutes()
       {
-         Routes routes = _application.Settings.Routes;
+         var routes = _application.Settings.Routes;
 
-         Route route = routes.Add();
+         var route = routes.Add();
          route.DomainName = "test1.com";
          route.Description = "description";
          route.UseSSL = true;
@@ -269,20 +262,20 @@ namespace RegressionTests.Infrastructure
          route.TreatRecipientAsLocalDomain = true;
          route.Save();
 
-         RouteAddresses addresses = route.Addresses;
+         var addresses = route.Addresses;
 
-         RouteAddress address1 = addresses.Add();
+         var address1 = addresses.Add();
          address1.Address = "address1@test2.com";
          address1.Save();
 
-         RouteAddress address2 = addresses.Add();
+         var address2 = addresses.Add();
          address2.Address = "address2@test2.com";
          address2.Save();
       }
 
       private void SetupDomainObject(Domain domain)
       {
-         domain.Postmaster = "someone@test.com";
+         domain.Postmaster = "someone@example.test";
          domain.SignatureEnabled = true;
          domain.AddSignaturesToLocalMail = true;
          domain.AddSignaturesToReplies = true;
@@ -291,11 +284,11 @@ namespace RegressionTests.Infrastructure
          domain.SignatureHTML = "HTML";
          domain.Save();
 
-         DomainAlias da = domain.DomainAliases.Add();
+         var da = domain.DomainAliases.Add();
          da.AliasName = "test1.com";
          da.Save();
 
-         DomainAlias da2 = domain.DomainAliases.Add();
+         var da2 = domain.DomainAliases.Add();
          da2.AliasName = "test2.com";
          da2.Save();
       }
@@ -309,8 +302,8 @@ namespace RegressionTests.Infrastructure
 
       private void SetupPublicFolders()
       {
-         IMAPFolders folders = _application.Settings.PublicFolders;
-         IMAPFolder folder = folders.Add("Test1");
+         var folders = _application.Settings.PublicFolders;
+         var folder = folders.Add("Test1");
          folder.Save();
 
          folder = folders.Add("Test2");
@@ -322,10 +315,10 @@ namespace RegressionTests.Infrastructure
          folder = folders.Add("ACL");
          folder.Save();
 
-         Domain domain = _application.Domains[0];
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "acltest-1@test.com", "test");
+         var domain = _application.Domains[0];
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "acltest-1@example.test", "test");
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.PermissionAccountID = account1.ID;
          permission.set_Permission(eACLPermission.ePermissionAdminister, true);
@@ -335,7 +328,7 @@ namespace RegressionTests.Infrastructure
          folder = folder.SubFolders.Add("MySubFolder");
          folder.Save();
 
-         Group group1 = _application.Settings.Groups.Add();
+         var group1 = _application.Settings.Groups.Add();
          group1.Name = "ACLTestGroup";
          group1.Save();
 
@@ -351,21 +344,21 @@ namespace RegressionTests.Infrastructure
       {
          if (_backupMessages)
          {
-            Domain domain = _application.Domains[0];
+            var domain = _application.Domains[0];
 
-            IMAPFolders publicFolders = _application.Settings.PublicFolders;
+            var publicFolders = _application.Settings.PublicFolders;
 
             Assert.IsNotNull(publicFolders.get_ItemByName("Test1"));
             Assert.IsNotNull(publicFolders.get_ItemByName("Test2"));
             Assert.IsNotNull(publicFolders.get_ItemByName("Test3"));
             Assert.IsNotNull(publicFolders.get_ItemByName("ACL"));
 
-            IMAPFolderPermissions permissions = publicFolders.get_ItemByName("ACL").Permissions;
+            var permissions = publicFolders.get_ItemByName("ACL").Permissions;
             Assert.AreEqual(1, permissions.Count);
 
-            Account account1 = domain.Accounts.get_ItemByAddress("acltest-1@test.com");
+            var account1 = domain.Accounts.get_ItemByAddress("acltest-1@example.test");
 
-            IMAPFolderPermission permission = permissions[0];
+            var permission = permissions[0];
 
             Assert.AreEqual(eACLPermissionType.ePermissionTypeUser, permission.PermissionType);
             Assert.AreEqual(account1.ID, permission.PermissionAccountID);
@@ -375,7 +368,7 @@ namespace RegressionTests.Infrastructure
             Assert.IsFalse(permission.get_Permission(eACLPermission.ePermissionRead));
             Assert.IsFalse(permission.get_Permission(eACLPermission.ePermissionWriteSeen));
 
-            Group group1 = _application.Settings.Groups.get_ItemByName("ACLTestGroup");
+            var group1 = _application.Settings.Groups.get_ItemByName("ACLTestGroup");
 
             permissions = publicFolders.get_ItemByName("ACL").SubFolders.get_ItemByName("MySubFolder").Permissions;
             permission = permissions[0];
@@ -393,28 +386,28 @@ namespace RegressionTests.Infrastructure
       private void SetupDistributionListObject(Domain domain)
       {
          var listRecipients = new List<string>();
-         listRecipients.Add("member1@test.com");
-         listRecipients.Add("member2@test.com");
-         listRecipients.Add("member3@test.com");
+         listRecipients.Add("member1@example.test");
+         listRecipients.Add("member2@example.test");
+         listRecipients.Add("member3@example.test");
 
-         DistributionList list = SingletonProvider<TestSetup>.Instance.AddDistributionList(domain, "list@test.com",
-                                                                                           listRecipients);
+         var list = SingletonProvider<TestSetup>.Instance.AddDistributionList(domain, "list@example.test",
+            listRecipients);
       }
 
       private void SetupGroupObject()
       {
-         Group group = _application.Settings.Groups.Add();
+         var group = _application.Settings.Groups.Add();
          group.Name = "TestGroup";
          group.Save();
 
-         Account gm1 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm1@test.com",
-                                                                        "test");
-         Account gm2 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm2@test.com",
-                                                                        "test");
-         Account gm3 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm3@test.com",
-                                                                        "test");
+         var gm1 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm1@example.test",
+            "test");
+         var gm2 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm2@example.test",
+            "test");
+         var gm3 = SingletonProvider<TestSetup>.Instance.AddAccount(_application.Domains[0], "gm3@example.test",
+            "test");
 
-         GroupMember gm = group.Members.Add();
+         var gm = group.Members.Add();
          gm.AccountID = gm1.ID;
          gm.Save();
 
@@ -429,12 +422,13 @@ namespace RegressionTests.Infrastructure
 
       private void SetupAliasObject(Domain domain)
       {
-         Alias alias = SingletonProvider<TestSetup>.Instance.AddAlias(domain, "alias@test.com", "someone@test.com");
+         var alias = SingletonProvider<TestSetup>.Instance.AddAlias(domain, "alias@example.test",
+            "someone@example.test");
       }
 
       private void SetupAccountObject(Domain domain)
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@example.test", "test");
 
          // Make sure the inbox contains two messages which should be backed up.
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Message 1 Subject",
@@ -443,11 +437,11 @@ namespace RegressionTests.Infrastructure
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Message 2 Subject",
-                                                      "Message 2 Body");
+            "Message 2 Body");
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 2);
 
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Message 3 Subject",
-                                                      "Message 3 Body");
+            "Message 3 Body");
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 3);
 
          var sim = new ImapClientSimulator();
@@ -482,7 +476,7 @@ namespace RegressionTests.Infrastructure
          account.Save();
 
          // Set up fetch account
-         FetchAccount fa = account.FetchAccounts.Add();
+         var fa = account.FetchAccounts.Add();
          fa.DaysToKeepMessages = 5;
          fa.Enabled = true;
          fa.MinutesBetweenFetch = 10;
@@ -499,17 +493,17 @@ namespace RegressionTests.Infrastructure
 
          DownloadFromExternalAccount(account, fa);
 
-         Rule rule = account.Rules.Add();
+         var rule = account.Rules.Add();
          rule.Name = "MyRule";
-         RuleCriteria criteria = rule.Criterias.Add();
+         var criteria = rule.Criterias.Add();
          criteria.MatchType = eRuleMatchType.eMTGreaterThan;
          criteria.PredefinedField = eRulePredefinedField.eFTMessageSize;
          criteria.MatchValue = "0";
          criteria.Save();
 
-         RuleAction action = rule.Actions.Add();
+         var action = rule.Actions.Add();
          action.Type = eRuleActionType.eRAForwardEmail;
-         action.To = "someone@test.com";
+         action.To = "someone@example.test";
          action.Body = "Test";
          action.Filename = "File";
          action.FromAddress = "T";
@@ -549,7 +543,7 @@ namespace RegressionTests.Infrastructure
 
       private bool BackupEnvironment()
       {
-         BackupSettings oBackupSettings = _application.Settings.Backup;
+         var oBackupSettings = _application.Settings.Backup;
          oBackupSettings.BackupDomains = true;
          oBackupSettings.BackupMessages = _backupMessages;
          oBackupSettings.BackupSettings = true;
@@ -567,46 +561,46 @@ namespace RegressionTests.Infrastructure
          while (_application.Domains.Count > 0)
             _application.Domains[0].Delete();
 
-         WhiteListAddresses addresses = _application.Settings.AntiSpam.WhiteListAddresses;
+         var addresses = _application.Settings.AntiSpam.WhiteListAddresses;
          while (addresses.Count > 0)
             addresses[0].Delete();
 
-         Routes routes = _application.Settings.Routes;
+         var routes = _application.Settings.Routes;
          while (routes.Count > 0)
             routes[0].Delete();
 
-         BlockedAttachments attachments = _application.Settings.AntiVirus.BlockedAttachments;
+         var attachments = _application.Settings.AntiVirus.BlockedAttachments;
          while (attachments.Count > 0)
             attachments[0].Delete();
 
-         DNSBlackLists blackLists = _application.Settings.AntiSpam.DNSBlackLists;
+         var blackLists = _application.Settings.AntiSpam.DNSBlackLists;
          while (blackLists.Count > 0)
             blackLists[0].Delete();
 
-         SURBLServers surblServers = _application.Settings.AntiSpam.SURBLServers;
+         var surblServers = _application.Settings.AntiSpam.SURBLServers;
          while (surblServers.Count > 0)
             surblServers[0].Delete();
 
-         SSLCertificates sslCertificates = _application.Settings.SSLCertificates;
+         var sslCertificates = _application.Settings.SSLCertificates;
          while (sslCertificates.Count > 0)
             sslCertificates[0].Delete();
 
-         IncomingRelays incomingRelays = _application.Settings.IncomingRelays;
+         var incomingRelays = _application.Settings.IncomingRelays;
          while (incomingRelays.Count > 0)
             incomingRelays[0].Delete();
       }
 
       private void RestoreEnvironment()
       {
-         string startTime = _application.Status.StartTime;
+         var startTime = _application.Status.StartTime;
 
          // locate backup file
          var dirInfo = new DirectoryInfo(_backupDir);
-         FileInfo[] files = dirInfo.GetFiles();
+         var files = dirInfo.GetFiles();
 
-         string backupFile = files[0].FullName;
+         var backupFile = files[0].FullName;
 
-         Backup backup = _application.BackupManager.LoadBackup(backupFile);
+         var backup = _application.BackupManager.LoadBackup(backupFile);
 
          backup.RestoreDomains = true;
          backup.RestoreMessages = _backupMessages;
@@ -639,7 +633,7 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmSSLCertificates()
       {
-         SSLCertificate cert = _application.Settings.SSLCertificates[0];
+         var cert = _application.Settings.SSLCertificates[0];
          Assert.AreEqual("file1.txt", cert.CertificateFile);
          Assert.AreEqual("name1", cert.Name);
          Assert.AreEqual("pk1", cert.PrivateKeyFile);
@@ -652,7 +646,7 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmDNSBlackLists()
       {
-         DNSBlackList black = _application.Settings.AntiSpam.DNSBlackLists.get_ItemByDNSHost("127.0.0.1");
+         var black = _application.Settings.AntiSpam.DNSBlackLists.get_ItemByDNSHost("127.0.0.1");
          Assert.IsTrue(black.Active);
          Assert.AreEqual("127.5.2.1", black.ExpectedResult);
          Assert.AreEqual("Test", black.RejectMessage);
@@ -667,10 +661,10 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmIncomingRelay()
       {
-         IncomingRelays relays = _application.Settings.IncomingRelays;
+         var relays = _application.Settings.IncomingRelays;
          Assert.AreEqual(1, relays.Count);
 
-         IncomingRelay relay = relays[0];
+         var relay = relays[0];
          Assert.AreEqual("Test", relay.Name);
          Assert.AreEqual("1.2.3.4", relay.LowerIP);
          Assert.AreEqual("4.3.2.1", relay.UpperIP);
@@ -678,7 +672,7 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmSURBLServers()
       {
-         SURBLServer black = _application.Settings.AntiSpam.SURBLServers.get_ItemByDNSHost("127.0.0.1");
+         var black = _application.Settings.AntiSpam.SURBLServers.get_ItemByDNSHost("127.0.0.1");
          Assert.IsTrue(black.Active);
          Assert.AreEqual("Test", black.RejectMessage);
          Assert.AreEqual(4, black.Score);
@@ -691,12 +685,12 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmBlockedAttachments()
       {
-         BlockedAttachments attachments = _application.Settings.AntiVirus.BlockedAttachments;
+         var attachments = _application.Settings.AntiVirus.BlockedAttachments;
          Assert.Greater(attachments.Count, 0);
 
-         for (int i = 0; i < attachments.Count; i++)
+         for (var i = 0; i < attachments.Count; i++)
          {
-            BlockedAttachment ba = attachments[i];
+            var ba = attachments[i];
 
             if (ba.Description == "My description" && ba.Wildcard == "*.my")
                return;
@@ -707,11 +701,11 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmRoutes()
       {
-         Routes routes = _application.Settings.Routes;
+         var routes = _application.Settings.Routes;
 
          Assert.AreEqual(2, routes.Count);
 
-         Route route = routes[0];
+         var route = routes[0];
          Assert.AreEqual("test1.com", route.DomainName);
          Assert.AreEqual("description", route.Description);
          Assert.AreEqual(true, route.UseSSL);
@@ -739,11 +733,11 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmGreyListingWhiteList()
       {
-         GreyListingWhiteAddresses addresses = _application.Settings.AntiSpam.GreyListingWhiteAddresses;
+         var addresses = _application.Settings.AntiSpam.GreyListingWhiteAddresses;
 
          Assert.AreEqual(2, addresses.Count);
 
-         GreyListingWhiteAddress address = addresses[0];
+         var address = addresses[0];
          Assert.AreEqual("helo1", address.Description);
          Assert.AreEqual("1.1.1.1", address.IPAddress);
 
@@ -754,11 +748,11 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmWhiteList()
       {
-         WhiteListAddresses addresses = _application.Settings.AntiSpam.WhiteListAddresses;
+         var addresses = _application.Settings.AntiSpam.WhiteListAddresses;
 
          Assert.AreEqual(2, addresses.Count);
 
-         WhiteListAddress address = addresses[0];
+         var address = addresses[0];
          Assert.AreEqual("Desc1", address.Description);
          Assert.AreEqual("Email1", address.EmailAddress);
          Assert.AreEqual("1.1.1.1", address.LowerIPAddress);
@@ -773,14 +767,14 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmDomainObject(Domain domain)
       {
-         Assert.AreEqual("someone@test.com", domain.Postmaster);
+         Assert.AreEqual("someone@example.test", domain.Postmaster);
          Assert.IsTrue(domain.SignatureEnabled);
          Assert.IsTrue(domain.AddSignaturesToLocalMail);
          Assert.IsTrue(domain.AddSignaturesToReplies);
          Assert.AreEqual("PLS", domain.SignaturePlainText);
          Assert.AreEqual("HTML", domain.SignatureHTML);
 
-         Assert.AreEqual("test.com", _application.Domains[0].Name);
+         Assert.AreEqual("example.test", _application.Domains[0].Name);
          Assert.AreEqual(2, _application.Domains[0].DomainAliases.Count);
          Assert.AreEqual("test1.com", _application.Domains[0].DomainAliases[0].AliasName);
          Assert.AreEqual("test2.com", _application.Domains[0].DomainAliases[1].AliasName);
@@ -795,24 +789,24 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmDistributionListObject()
       {
-         DistributionList list = _application.Domains[0].DistributionLists[0];
-         Assert.AreEqual("list@test.com", list.Address);
+         var list = _application.Domains[0].DistributionLists[0];
+         Assert.AreEqual("list@example.test", list.Address);
          Assert.AreEqual(3, list.Recipients.Count);
-         Assert.AreEqual("member1@test.com", list.Recipients[0].RecipientAddress);
-         Assert.AreEqual("member2@test.com", list.Recipients[1].RecipientAddress);
-         Assert.AreEqual("member3@test.com", list.Recipients[2].RecipientAddress);
+         Assert.AreEqual("member1@example.test", list.Recipients[0].RecipientAddress);
+         Assert.AreEqual("member2@example.test", list.Recipients[1].RecipientAddress);
+         Assert.AreEqual("member3@example.test", list.Recipients[2].RecipientAddress);
       }
 
       private void ConfirmAliasObject()
       {
-         Alias alias = _application.Domains[0].Aliases[0];
-         Assert.AreEqual("alias@test.com", alias.Name);
-         Assert.AreEqual("someone@test.com", alias.Value);
+         var alias = _application.Domains[0].Aliases[0];
+         Assert.AreEqual("alias@example.test", alias.Name);
+         Assert.AreEqual("someone@example.test", alias.Value);
       }
 
       private void ConfirmAccountObject()
       {
-         Account account = _application.Domains[0].Accounts.get_ItemByAddress("test@test.com");
+         var account = _application.Domains[0].Accounts.get_ItemByAddress("test@example.test");
 
 
          Assert.IsTrue(account.Active);
@@ -836,7 +830,7 @@ namespace RegressionTests.Infrastructure
          Assert.AreEqual("SUBJ", account.VacationSubject);
 
          // Confirm fetch account
-         FetchAccount fa = account.FetchAccounts.get_Item(0);
+         var fa = account.FetchAccounts.get_Item(0);
          Assert.AreEqual(5, fa.DaysToKeepMessages);
          Assert.IsTrue(fa.Enabled);
          Assert.AreEqual(10, fa.MinutesBetweenFetch);
@@ -853,17 +847,17 @@ namespace RegressionTests.Infrastructure
          // Make sur no additional mail is downloaded. We have already downloaded it.
          DownloadFromExternalAccount(account, fa);
 
-         Rule rule = account.Rules[0];
+         var rule = account.Rules[0];
          Assert.AreEqual("MyRule", rule.Name);
 
-         RuleCriteria criteria = rule.Criterias[0];
+         var criteria = rule.Criterias[0];
          Assert.AreEqual(eRuleMatchType.eMTGreaterThan, criteria.MatchType);
          Assert.AreEqual(eRulePredefinedField.eFTMessageSize, criteria.PredefinedField);
          Assert.AreEqual("0", criteria.MatchValue);
 
-         RuleAction action = rule.Actions[0];
+         var action = rule.Actions[0];
          Assert.AreEqual(eRuleActionType.eRAForwardEmail, action.Type);
-         Assert.AreEqual("someone@test.com", action.To);
+         Assert.AreEqual("someone@example.test", action.To);
          Assert.AreEqual("Test", action.Body);
          Assert.AreEqual("File", action.Filename);
          Assert.AreEqual("T", action.FromAddress);
@@ -874,9 +868,9 @@ namespace RegressionTests.Infrastructure
          Assert.AreEqual("Subj", action.Subject);
          Assert.AreEqual("Value", action.Value);
 
-         IMAPFolder inbox = account.IMAPFolders.get_ItemByName("INBOX");
+         var inbox = account.IMAPFolders.get_ItemByName("INBOX");
 
-         Messages messages = inbox.Messages;
+         var messages = inbox.Messages;
 
          if (_backupMessages)
          {
@@ -898,14 +892,14 @@ namespace RegressionTests.Infrastructure
 
       private void ConfirmGroupObject()
       {
-         Group group = _application.Settings.Groups.get_ItemByName("TestGroup");
+         var group = _application.Settings.Groups.get_ItemByName("TestGroup");
 
          Assert.AreEqual("TestGroup", group.Name);
          Assert.AreEqual(3, group.Members.Count);
 
-         Assert.AreEqual("gm1@test.com", group.Members[0].Account.Address);
-         Assert.AreEqual("gm2@test.com", group.Members[1].Account.Address);
-         Assert.AreEqual("gm3@test.com", group.Members[2].Account.Address);
+         Assert.AreEqual("gm1@example.test", group.Members[0].Account.Address);
+         Assert.AreEqual("gm2@example.test", group.Members[1].Account.Address);
+         Assert.AreEqual("gm3@example.test", group.Members[2].Account.Address);
       }
 
       [Test]

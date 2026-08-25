@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using hMailServer;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using RegressionTests.Shared;
 
 namespace RegressionTests.SMTP
 {
    [TestFixture]
-   class MailFromParsing : TestFixtureBase
+   internal class MailFromParsing : TestFixtureBase
    {
       [Test]
       public void MailFromValidAddressShouldSucceed()
@@ -81,7 +77,8 @@ namespace RegressionTests.SMTP
       [Test]
       public void MailFromUnquotedAddressWithSpaceShouldFail()
       {
-         AssertInvalidMailFromCommand("MAIL FROM: <John Smith@example.com>", "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
+         AssertInvalidMailFromCommand("MAIL FROM: <John Smith@example.com>",
+            "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
       }
 
       [Test]
@@ -123,25 +120,29 @@ namespace RegressionTests.SMTP
       [Test]
       public void MailFromSingleQuoteShouldFail()
       {
-         AssertInvalidMailFromCommand("MAIL FROM: \"", "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
+         AssertInvalidMailFromCommand("MAIL FROM: \"",
+            "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
       }
 
       [Test]
       public void MailWithSingleGreaterThanShouldFail()
       {
-         AssertInvalidMailFromCommand("MAIL FROM: <example@example.com", "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
+         AssertInvalidMailFromCommand("MAIL FROM: <example@example.com",
+            "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
       }
 
       [Test]
       public void MailWithSingleGreaterThanAndParametersShouldFail()
       {
-         AssertInvalidMailFromCommand("MAIL FROM: <example@example.com AUTH=<>", "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
+         AssertInvalidMailFromCommand("MAIL FROM: <example@example.com AUTH=<>",
+            "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
       }
 
       [Test]
       public void MailWithSingleGreaterThanAndQuotedFromAndParametersShouldFail()
       {
-         AssertInvalidMailFromCommand("MAIL FROM: <\"John Smith\"@example.com AUTH=<>", "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
+         AssertInvalidMailFromCommand("MAIL FROM: <\"John Smith\"@example.com AUTH=<>",
+            "550 Invalid syntax. Syntax should be MAIL FROM:<mailbox@domain>[crlf]");
       }
 
 
@@ -153,7 +154,7 @@ namespace RegressionTests.SMTP
          smtpClientSimulator.Send("HELO test\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
 
-         string result = smtpClientSimulator.SendAndReceive(command+ "\r\n");
+         var result = smtpClientSimulator.SendAndReceive(command + "\r\n");
 
 
          smtpClientSimulator.Disconnect();
@@ -169,12 +170,11 @@ namespace RegressionTests.SMTP
          smtpClientSimulator.Send("HELO test\r\n");
          Assert.IsTrue(smtpClientSimulator.Receive().StartsWith("250"));
 
-         string result = smtpClientSimulator.SendAndReceive(comamnd + "\r\n");
+         var result = smtpClientSimulator.SendAndReceive(comamnd + "\r\n");
 
          smtpClientSimulator.Disconnect();
 
          Assert.AreEqual("250 OK\r\n", result);
       }
-
    }
 }

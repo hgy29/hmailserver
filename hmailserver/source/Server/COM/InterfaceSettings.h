@@ -223,14 +223,16 @@ END_COM_MAP()
    STDMETHOD(get_TlsVersion13Enabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_TlsVersion13Enabled)(/*[in]*/ VARIANT_BOOL newVal);
 
+   STDMETHOD(get_TlsOptionPreferServerCiphersEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
+   STDMETHOD(put_TlsOptionPreferServerCiphersEnabled)(/*[in]*/ VARIANT_BOOL newVal);
+   STDMETHOD(get_TlsOptionPrioritizeChaChaEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
+   STDMETHOD(put_TlsOptionPrioritizeChaChaEnabled)(/*[in]*/ VARIANT_BOOL newVal);
+
    STDMETHOD(get_CrashSimulationMode)(/*[out, retval]*/ long *pVal);
    STDMETHOD(put_CrashSimulationMode)(/*[in]*/ long newVal);
 
    STDMETHOD(get_IMAPMasterUser)(/*[out, retval]*/ BSTR *pVal);
    STDMETHOD(put_IMAPMasterUser)(/*[in]*/ BSTR newVal);
-
-   STDMETHOD(get_IMAPAuthAllowPlainText)(/*[out, retval]*/ VARIANT_BOOL *pVal);
-   STDMETHOD(put_IMAPAuthAllowPlainText)(/*[in]*/ VARIANT_BOOL newVal);
 
    STDMETHOD(get_IMAPSASLPlainEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_IMAPSASLPlainEnabled)(/*[in]*/ VARIANT_BOOL newVal);
@@ -240,6 +242,12 @@ END_COM_MAP()
 
    STDMETHOD(get_IPv6PreferredEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_IPv6PreferredEnabled)(/*[in]*/ VARIANT_BOOL newVal);
+
+   STDMETHOD(get_RewriteEnvelopeFromWhenForwarding)(/*[out, retval]*/ VARIANT_BOOL *pVal);
+   STDMETHOD(put_RewriteEnvelopeFromWhenForwarding)(/*[in]*/ VARIANT_BOOL newVal);
+
+   STDMETHOD(get_CreateDefaultSpecialUseFoldersEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
+   STDMETHOD(put_CreateDefaultSpecialUseFoldersEnabled)(/*[in]*/ VARIANT_BOOL newVal);
 
    bool LoadSettings();
 

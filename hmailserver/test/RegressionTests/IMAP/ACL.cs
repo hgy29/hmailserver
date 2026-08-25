@@ -1,10 +1,10 @@
 // Copyright (c) 2010 Martin Knafve / hMailServer.com.  
 // http://www.hmailserver.com
 
+using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.IMAP
 {
@@ -14,51 +14,51 @@ namespace RegressionTests.IMAP
       [Test]
       public void ExamineFolderRequiresReadPermission()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.Save();
 
-         string selectResult = string.Empty;
+         var selectResult = string.Empty;
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
-         string examineResult = imapClientSimulator.ExamineFolder("#Public.Share1");
+         var examineResult = imapClientSimulator.ExamineFolder("#Public.Share1");
          imapClientSimulator.Disconnect();
 
          Assert.IsTrue(examineResult.Contains("ACL: Read permission denied (Required for EXAMINE command)."),
-                       examineResult);
+            examineResult);
       }
 
       [Test]
       public void FolderMarkedAsReadOnlyWhenUserHasReadOnlyRights()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.set_Permission(eACLPermission.ePermissionRead, true);
          permission.Save();
 
-         string selectResult = string.Empty;
+         var selectResult = string.Empty;
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
@@ -73,15 +73,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void FolderMarkedAsReadWriteWhenUserHasChangeRights()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "reader@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -89,7 +89,7 @@ namespace RegressionTests.IMAP
          permission.set_Permission(eACLPermission.ePermissionWriteOthers, true);
          permission.Save();
 
-         string selectResult = string.Empty;
+         var selectResult = string.Empty;
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
@@ -104,15 +104,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestAppendToPublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "append-public@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "append-public@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -123,7 +123,7 @@ namespace RegressionTests.IMAP
 
          var simulator = new ImapClientSimulator();
 
-         string sWelcomeMessage = simulator.Connect();
+         var sWelcomeMessage = simulator.Connect();
          simulator.LogonWithLiteral(account.Address, "test");
          simulator.SendSingleCommandWithLiteral("A01 APPEND #Public.Share1 {4}", "ABCD");
          Assert.AreEqual(1, simulator.GetMessageCount("#Public.Share1"));
@@ -133,23 +133,23 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestCopyMessageToPublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account7@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account7@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
 
-         SmtpClientSimulator.StaticSend("test@test.com", account1.Address, "TestMessage", "Body");
+         SmtpClientSimulator.StaticSend("test@example.test", account1.Address, "TestMessage", "Body");
 
          CustomAsserts.AssertFolderMessageCount(account1.IMAPFolders.get_ItemByName("INBOX"), 1);
          CustomAsserts.AssertFolderMessageCount(folder, 0);
@@ -175,15 +175,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestCreateFolderWithSameNameAsPublic()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         string origPublicFolderName = _settings.IMAPPublicFolderName;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var origPublicFolderName = _settings.IMAPPublicFolderName;
 
          _settings.IMAPPublicFolderName = "MyPublic";
 
          try
          {
-            Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account10@test.com",
-                                                                                "test");
+            var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account10@example.test",
+               "test");
 
             var imapClientSimulator = new ImapClientSimulator();
             imapClientSimulator.Connect();
@@ -201,10 +201,10 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestCreateRootSharedFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1c@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2c@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1c@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2c@example.test", "test");
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
@@ -217,16 +217,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestDelete()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -235,7 +235,7 @@ namespace RegressionTests.IMAP
          permission.Save();
 
          var imapClientSimulator = new ImapClientSimulator();
-         imapClientSimulator.ConnectAndLogon("account9@test.com", "test");
+         imapClientSimulator.ConnectAndLogon("account9@example.test", "test");
          Assert.IsTrue(imapClientSimulator.SelectFolder("#public.Share1"));
          Assert.IsFalse(imapClientSimulator.DeleteFolder("#public.Share1"));
 
@@ -253,21 +253,21 @@ namespace RegressionTests.IMAP
       [Description("Test that when deleting an account, the corresponding permissions is removed as well.")]
       public void TestDeleteAccountHoldingGrant()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
+         var publicFolders = _settings.PublicFolders;
 
          Assert.AreEqual(0, publicFolders.Count);
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
          Assert.AreEqual(1, publicFolders.Count);
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.Save();
@@ -280,21 +280,21 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestDeleteCheckAPI()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
+         var publicFolders = _settings.PublicFolders;
 
          Assert.AreEqual(0, publicFolders.Count);
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
          Assert.AreEqual(1, publicFolders.Count);
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -303,7 +303,7 @@ namespace RegressionTests.IMAP
          permission.Save();
 
          var imapClientSimulator = new ImapClientSimulator();
-         imapClientSimulator.ConnectAndLogon("account9@test.com", "test");
+         imapClientSimulator.ConnectAndLogon("account9@example.test", "test");
          Assert.IsTrue(imapClientSimulator.SelectFolder("#public.Share1"));
          Assert.IsFalse(imapClientSimulator.DeleteFolder("#public.Share1"));
 
@@ -324,20 +324,20 @@ namespace RegressionTests.IMAP
       [Description("Test that when deleting an group, the corresponding permissions is removed as well.")]
       public void TestDeleteGroupHoldingGrant()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
 
-         Group group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
+         var group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
          SingletonProvider<TestSetup>.Instance.AddGroupMember(group, account1);
 
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionGroupID = group.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeGroup;
          permission.Save();
@@ -350,24 +350,24 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestDeleteSubFolderCheckAPI()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
+         var publicFolders = _settings.PublicFolders;
 
          Assert.AreEqual(0, publicFolders.Count);
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
          Assert.AreEqual(1, publicFolders.Count);
 
-         IMAPFolders mySubFolders = folder.SubFolders;
+         var mySubFolders = folder.SubFolders;
          Assert.AreEqual(0, mySubFolders.Count);
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -376,7 +376,7 @@ namespace RegressionTests.IMAP
          permission.Save();
 
          var imapClientSimulator = new ImapClientSimulator();
-         imapClientSimulator.ConnectAndLogon("account9@test.com", "test");
+         imapClientSimulator.ConnectAndLogon("account9@example.test", "test");
          Assert.IsTrue(imapClientSimulator.CreateFolder("#public.Share1.MySub"));
          Assert.AreEqual(1, mySubFolders.Count);
 
@@ -398,34 +398,34 @@ namespace RegressionTests.IMAP
       ]
       public void TestDuplicateConflictingGroupPermission()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
 
-         Group group1 = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup1");
+         var group1 = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup1");
          SingletonProvider<TestSetup>.Instance.AddGroupMember(group1, account1);
 
-         Group group2 = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup2");
+         var group2 = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup2");
          SingletonProvider<TestSetup>.Instance.AddGroupMember(group2, account1);
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermissions permissions = folder.Permissions;
+         var permissions = folder.Permissions;
 
-         IMAPFolderPermission permission = permissions.Add();
+         var permission = permissions.Add();
          permission.PermissionGroupID = group1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeGroup;
          permission.Save();
 
-         IMAPFolderPermission permission2 = permissions.Add();
+         var permission2 = permissions.Add();
          permission2.PermissionGroupID = group2.ID;
          permission2.PermissionType = eACLPermissionType.ePermissionTypeGroup;
          permission2.set_Permission(eACLPermission.ePermissionLookup, true);
          permission2.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
 
          // The account should not have permission since the first permission doesn't give him this.
          var imapClientSimulator = new ImapClientSimulator();
@@ -460,15 +460,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestExpunge()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -477,8 +477,8 @@ namespace RegressionTests.IMAP
          permission.set_Permission(eACLPermission.ePermissionWriteDeleted, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
-         SmtpClientSimulator.StaticSend("test@test.com", account1.Address, "TestMessage", "Body");
+         var folderName = "#Public.Share1";
+         SmtpClientSimulator.StaticSend("test@example.test", account1.Address, "TestMessage", "Body");
          CustomAsserts.AssertFolderMessageCount(account1.IMAPFolders.get_ItemByName("INBOX"), 1);
          CustomAsserts.AssertFolderMessageCount(folder, 0);
 
@@ -503,26 +503,26 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestGetACL()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account12@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account12@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.set_Permission(eACLPermission.ePermissionAdminister, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
-         string result = imapClientSimulator.GetACL(folderName);
+         var result = imapClientSimulator.GetACL(folderName);
          Assert.IsTrue(result.StartsWith("* ACL \"" + folderName + "\" " + account1.Address + " ka"));
 
 
@@ -545,27 +545,27 @@ namespace RegressionTests.IMAP
       }
 
       /// <summary>
-      /// Test that if you create a folder named #public.Share1, both #public and #public.Share1
-      /// are listed in the LIST response.
+      ///    Test that if you create a folder named #public.Share1, both #public and #public.Share1
+      ///    are listed in the LIST response.
       /// </summary>
       [Test]
       public void TestLISTPublicFolderParent()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account5@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account5@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
@@ -582,27 +582,27 @@ namespace RegressionTests.IMAP
       }
 
       /// <summary>
-      /// Test that if you create a folder named #public.Share1, both #public and #public.Share1
-      /// are listed in the LIST response.
+      ///    Test that if you create a folder named #public.Share1, both #public and #public.Share1
+      ///    are listed in the LIST response.
       /// </summary>
       [Test]
       public void TestLSUBPublicFolderParent()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account5@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account5@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
@@ -619,20 +619,20 @@ namespace RegressionTests.IMAP
       }
 
       /// <summary>
-      /// Test that a public folder is included in the LIST response.
+      ///    Test that a public folder is included in the LIST response.
       /// </summary>
       [Test]
       public void TestListPublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account4@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account4@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -642,7 +642,7 @@ namespace RegressionTests.IMAP
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
 
-         string result = imapClientSimulator.List();
+         var result = imapClientSimulator.List();
 
          Assert.IsTrue(result.Contains(folder.Name));
 
@@ -652,17 +652,17 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestListPublicFolderAnyonePermission()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@test.com", "test");
-         Account account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@example.test", "test");
+         var account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
 
          // account 1 should not have permission since they aren't added yet.
          var imapClientSimulator = new ImapClientSimulator();
@@ -671,7 +671,7 @@ namespace RegressionTests.IMAP
          Assert.IsFalse(imapClientSimulator.List().Contains(folderName));
          imapClientSimulator.Disconnect();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionType = eACLPermissionType.ePermissionTypeAnyone;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -689,28 +689,28 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestListPublicFolderGroupPermission()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@test.com", "test");
-         Account account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@example.test", "test");
+         var account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@example.test", "test");
 
-         Group group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
+         var group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
          SingletonProvider<TestSetup>.Instance.AddGroupMember(group, account2);
 
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionGroupID = group.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeGroup;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
 
          // account 1 should not have permission since he's not in the group
          var imapClientSimulator = new ImapClientSimulator();
@@ -734,7 +734,7 @@ namespace RegressionTests.IMAP
          imapClientSimulator.Disconnect();
 
          // add account 1 to the group to give him permission.
-         GroupMember member = SingletonProvider<TestSetup>.Instance.AddGroupMember(group, account1);
+         var member = SingletonProvider<TestSetup>.Instance.AddGroupMember(group, account1);
          imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
@@ -753,16 +753,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestListPublicFolderOnly()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -780,16 +780,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestListPublicFolderSubFolderOnly()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -807,16 +807,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestListRights()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1b@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2b@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1b@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2b@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -829,25 +829,25 @@ namespace RegressionTests.IMAP
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
 
-         string rights = imapClientSimulator.ListRights(folderName, account1.Address);
-         Assert.IsTrue(rights.StartsWith("* LISTRIGHTS #Public.Share1 account1b@test.com l r s w i k x t e a"));
+         var rights = imapClientSimulator.ListRights(folderName, account1.Address);
+         Assert.IsTrue(rights.StartsWith("* LISTRIGHTS #Public.Share1 account1b@example.test l r s w i k x t e a"));
          imapClientSimulator.Disconnect();
       }
 
       [Test]
       public void TestMyRights()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account13@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account13@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -860,8 +860,8 @@ namespace RegressionTests.IMAP
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
-         string folderName = "#Public.Share1";
-         string result = imapClientSimulator.GetMyRights(folderName);
+         var folderName = "#Public.Share1";
+         var result = imapClientSimulator.GetMyRights(folderName);
          Assert.IsTrue(result.StartsWith("* MYRIGHTS \"" + folderName + "\" rkxea"));
 
          imapClientSimulator.Disconnect();
@@ -870,16 +870,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestPublicFolderCreateDeep()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -890,7 +890,7 @@ namespace RegressionTests.IMAP
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
-         string folderName = "#Public.Share1.MySub1.MySub2.MySub3.MySub4";
+         var folderName = "#Public.Share1.MySub1.MySub2.MySub3.MySub4";
          Assert.IsTrue(imapClientSimulator.CreateFolder(folderName));
 
          imapClientSimulator.Disconnect();
@@ -899,16 +899,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestPublicFolderNoSelectAttribute()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1-p@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
@@ -928,12 +928,12 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestPublicFolderSubscriptionAPI()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1e@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1e@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
          Assert.IsTrue(folder.Subscribed);
@@ -942,16 +942,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestPublicFolderSubscriptionCreate()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1f@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2f@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1f@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2f@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -964,10 +964,10 @@ namespace RegressionTests.IMAP
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
-         string folderName = "#Public.Share1.MySub";
+         var folderName = "#Public.Share1.MySub";
          imapClientSimulator.CreateFolder(folderName);
 
-         IMAPFolder theNewFolder = folder.SubFolders[0];
+         var theNewFolder = folder.SubFolders[0];
          Assert.IsTrue(theNewFolder.Name.Equals("MySub"));
          Assert.IsTrue(theNewFolder.Subscribed);
 
@@ -977,16 +977,16 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestPublicFolderUnsubscribe()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1g@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1g@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -999,7 +999,7 @@ namespace RegressionTests.IMAP
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
-         string folderName = "#Public.Share1";
+         var folderName = "#Public.Share1";
          Assert.IsFalse(imapClientSimulator.Unsubscribe(folderName));
 
 
@@ -1009,15 +1009,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestRenameFolderToAndFromPublic()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account11@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account11@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -1025,8 +1025,8 @@ namespace RegressionTests.IMAP
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.Save();
 
-         string oldFolderName = "#Public.Share1";
-         string newFolderName = "AccountLevelFolder";
+         var oldFolderName = "#Public.Share1";
+         var newFolderName = "AccountLevelFolder";
 
          // Test renaming from local folder name to shared folder.
          var imapClientSimulator = new ImapClientSimulator();
@@ -1051,23 +1051,23 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestRenamePublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account9@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.set_Permission(eACLPermission.ePermissionLookup, true);
          permission.Save();
 
-         string oldFolderName = "#Public.Share1.MySub1";
-         string newFolderName = "#Public.Share1.MySub2";
+         var oldFolderName = "#Public.Share1.MySub1";
+         var newFolderName = "#Public.Share1.MySub2";
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.Logon(account1.Address, "test");
@@ -1090,15 +1090,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestRenamePublicFolderToRootPublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1d@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1d@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -1106,8 +1106,8 @@ namespace RegressionTests.IMAP
          permission.set_Permission(eACLPermission.ePermissionDeleteMailbox, true);
          permission.Save();
 
-         string oldFolderName = "#Public.Share1.MySub1";
-         string newFolderName = "#Public.Share2";
+         var oldFolderName = "#Public.Share1.MySub1";
+         var newFolderName = "#Public.Share2";
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
@@ -1124,21 +1124,21 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestSelectPublicFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account6@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account6@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
          permission.Save();
 
-         string folderName = "#Public.Share1.MySub1";
+         var folderName = "#Public.Share1.MySub1";
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
          imapClientSimulator.LogonWithLiteral(account1.Address, "test");
@@ -1152,10 +1152,10 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestSetACLOnAccountFolder()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account2@example.test", "test");
 
          var imapClientSimulator = new ImapClientSimulator();
          imapClientSimulator.Connect();
@@ -1168,12 +1168,12 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestSetAclOnPublicFolderNormalUser()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account3@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
          var imapClientSimulator = new ImapClientSimulator();
@@ -1186,15 +1186,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestSetAclOnPublicFolderNormalUserWithPrivilegies()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account4@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account4@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -1210,15 +1210,15 @@ namespace RegressionTests.IMAP
       [Test]
       public void TestSetDeletedFlag()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account8@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account8@example.test", "test");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionAccountID = account1.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeUser;
          permission.set_Permission(eACLPermission.ePermissionCreate, true);
@@ -1226,8 +1226,8 @@ namespace RegressionTests.IMAP
          permission.set_Permission(eACLPermission.ePermissionRead, true);
          permission.Save();
 
-         string folderName = "#Public.Share1";
-         SmtpClientSimulator.StaticSend("test@test.com", account1.Address, "TestMessage", "Body");
+         var folderName = "#Public.Share1";
+         SmtpClientSimulator.StaticSend("test@example.test", account1.Address, "TestMessage", "Body");
          CustomAsserts.AssertFolderMessageCount(account1.IMAPFolders.get_ItemByName("INBOX"), 1);
          CustomAsserts.AssertFolderMessageCount(folder, 0);
 

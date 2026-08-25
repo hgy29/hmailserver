@@ -1110,29 +1110,25 @@ STDMETHODIMP InterfaceSettings::get_Backup(IInterfaceBackupSettings **pVal)
 
 STDMETHODIMP InterfaceSettings::get_Directories(IInterfaceDirectories **pVal)
 {
-   try
+   return COMError::Guard("InterfaceSettings::get_Directories", [&]() -> HRESULT
    {
       if (!config_)
          return GetAccessDenied();
 
       if (!GetIsServerAdmin())
          return authentication_->GetAccessDenied();
-   
+
       CComObject<InterfaceDirectories>* pItem = new CComObject<InterfaceDirectories>();
-   
+
       ini_file_settings_->LoadSettings();
-   
+
       pItem->SetAuthentication(authentication_);
       pItem->LoadSettings(ini_file_settings_);
       pItem->AddRef();
       *pVal = pItem;
-   
+
       return S_OK;
-   }
-   catch (...)
-   {
-      return COMError::GenerateGenericMessage();
-   }
+   });
 }
 
 STDMETHODIMP InterfaceSettings::get_AntiSpam(IInterfaceAntiSpam **pVal)
@@ -2423,6 +2419,70 @@ STDMETHODIMP InterfaceSettings::get_TlsVersion13Enabled(VARIANT_BOOL *pVal)
    }
 }
 
+STDMETHODIMP InterfaceSettings::put_TlsOptionPreferServerCiphersEnabled(VARIANT_BOOL newVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      config_->SetTlsOptionEnabled(HM::TlsOptionPreferServerCiphers, newVal == VARIANT_TRUE);
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::get_TlsOptionPreferServerCiphersEnabled(VARIANT_BOOL *pVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      *pVal = config_->GetTlsOptionEnabled(HM::TlsOptionPreferServerCiphers) ? VARIANT_TRUE : VARIANT_FALSE;
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::put_TlsOptionPrioritizeChaChaEnabled(VARIANT_BOOL newVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      config_->SetTlsOptionEnabled(HM::TlsOptionPrioritizeChaCha, newVal == VARIANT_TRUE);
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::get_TlsOptionPrioritizeChaChaEnabled(VARIANT_BOOL *pVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      *pVal = config_->GetTlsOptionEnabled(HM::TlsOptionPrioritizeChaCha) ? VARIANT_TRUE : VARIANT_FALSE;
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
 STDMETHODIMP InterfaceSettings::get_IMAPMasterUser(BSTR *pVal)
 {
    try
@@ -2458,39 +2518,6 @@ STDMETHODIMP InterfaceSettings::put_IMAPMasterUser(BSTR newVal)
    }
 }
 
-STDMETHODIMP InterfaceSettings::put_IMAPAuthAllowPlainText(VARIANT_BOOL newVal)
-{
-   try
-   {
-      if (!config_)
-         return GetAccessDenied();
-
-      config_->GetIMAPConfiguration()->SetIMAPAuthAllowPlainText(newVal == VARIANT_TRUE);
-      return S_OK;
-   }
-   catch (...)
-   {
-      return COMError::GenerateGenericMessage();
-   }
-}
-
-
-STDMETHODIMP InterfaceSettings::get_IMAPAuthAllowPlainText(VARIANT_BOOL *pVal)
-{
-   try
-   {
-      if (!config_)
-         return GetAccessDenied();
-
-      *pVal = config_->GetIMAPConfiguration()->GetIMAPAuthAllowPlainText() ? VARIANT_TRUE : VARIANT_FALSE;
-      return S_OK;
-   }
-   catch (...)
-   {
-      return COMError::GenerateGenericMessage();
-   }
-}
-
 STDMETHODIMP InterfaceSettings::put_IMAPSASLPlainEnabled(VARIANT_BOOL newVal)
 {
    try
@@ -2506,7 +2533,6 @@ STDMETHODIMP InterfaceSettings::put_IMAPSASLPlainEnabled(VARIANT_BOOL newVal)
       return COMError::GenerateGenericMessage();
    }
 }
-
 
 STDMETHODIMP InterfaceSettings::get_IMAPSASLPlainEnabled(VARIANT_BOOL *pVal)
 {
@@ -2582,6 +2608,74 @@ STDMETHODIMP InterfaceSettings::put_IPv6PreferredEnabled(VARIANT_BOOL newVal)
          return GetAccessDenied();
 
       config_->SetIPv6Preferred(newVal == VARIANT_TRUE);
+
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::get_RewriteEnvelopeFromWhenForwarding(VARIANT_BOOL *pVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      *pVal = ini_file_settings_->GetRewriteEnvelopeFromWhenForwarding() ? VARIANT_TRUE : VARIANT_FALSE;
+
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::put_RewriteEnvelopeFromWhenForwarding(VARIANT_BOOL newVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      ini_file_settings_->SetRewriteEnvelopeFromWhenForwarding(newVal == VARIANT_TRUE);
+
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::get_CreateDefaultSpecialUseFoldersEnabled(VARIANT_BOOL *pVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      *pVal = config_->GetCreateDefaultSpecialUseFolders() ? VARIANT_TRUE : VARIANT_FALSE;
+
+      return S_OK;
+   }
+   catch (...)
+   {
+      return COMError::GenerateGenericMessage();
+   }
+}
+
+STDMETHODIMP InterfaceSettings::put_CreateDefaultSpecialUseFoldersEnabled(VARIANT_BOOL newVal)
+{
+   try
+   {
+      if (!config_)
+         return GetAccessDenied();
+
+      config_->SetCreateDefaultSpecialUseFolders(newVal == VARIANT_TRUE);
 
       return S_OK;
    }

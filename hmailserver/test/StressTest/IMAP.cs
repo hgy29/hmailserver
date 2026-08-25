@@ -13,7 +13,7 @@ namespace StressTest
       [SetUp]
       public new void SetUp()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
       }
 
 
@@ -43,7 +43,7 @@ namespace StressTest
       private static ImapClientSimulator ConnectAndLogon()
       {
          ImapClientSimulator sim = new ImapClientSimulator();
-         sim.ConnectAndLogon("test@test.com", "test");
+         sim.ConnectAndLogon("test@example.test", "test");
          return sim;
       }
 

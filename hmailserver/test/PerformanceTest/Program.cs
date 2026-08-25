@@ -19,10 +19,10 @@ namespace PerformanceTest
 
             // Determine message count
             POP3Simulator pop3sim = new POP3Simulator();
-            int count = pop3sim.GetMessageCount("test@test.com", "test");
+            int count = pop3sim.GetMessageCount("test@example.test", "test");
 
             // Fetch them..
-            pop3sim.ConnectAndLogon("test@test.com","test");
+            pop3sim.ConnectAndLogon("test@example.test","test");
 
             for (int i = 1; i <= count; i++)
             {

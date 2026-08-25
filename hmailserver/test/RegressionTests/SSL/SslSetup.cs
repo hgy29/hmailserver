@@ -9,9 +9,9 @@ namespace RegressionTests.SSL
 {
    public class SslSetup
    {
-      public static void SetupSSLPorts(hMailServer.Application application, SslVersions sslVersions = null)
+      public static void SetupSSLPorts(Application application, SslVersions sslVersions = null)
       {
-         SSLCertificate sslCeritifcate = SetupSSLCertificate(application);
+         var sslCeritifcate = SetupSSLCertificate(application);
 
          var settings = application.Settings;
 
@@ -39,12 +39,13 @@ namespace RegressionTests.SSL
          settings.TlsVersion11Enabled = sslVersions == null || sslVersions.Tls11;
          settings.TlsVersion12Enabled = sslVersions == null || sslVersions.Tls12;
          settings.TlsVersion13Enabled = sslVersions == null || sslVersions.Tls13;
-         
+
          application.Stop();
          application.Start();
       }
 
-      private static void AddPort(TCPIPPorts ports, int portNumber, eConnectionSecurity connectionSecurity, int sslCertificateId, eSessionType sessionType)
+      private static void AddPort(TCPIPPorts ports, int portNumber, eConnectionSecurity connectionSecurity,
+         int sslCertificateId, eSessionType sessionType)
       {
          var port = ports.Add();
          port.Address = "0.0.0.0";
@@ -57,7 +58,7 @@ namespace RegressionTests.SSL
 
       public static string GetSslCertPath()
       {
-         string sslPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..\\..\\..\\..\\SSL examples");
+         var sslPath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..\\..\\..\\..\\SSL examples");
 
          return sslPath;
       }
@@ -75,15 +76,12 @@ namespace RegressionTests.SSL
          Console.WriteLine("Using certificate: " + pfxPath);
          var x509 = new X509Certificate2(pfxPath, "Secret1");
 
-         if (!x509.HasPrivateKey)
-         {
-            throw new Exception("Private key could not be accessed for test certificate.");
-         }
+         if (!x509.HasPrivateKey) throw new Exception("Private key could not be accessed for test certificate.");
 
          return x509;
       }
 
-      private static SSLCertificate SetupSSLCertificate(hMailServer.Application application)
+      private static SSLCertificate SetupSSLCertificate(Application application)
       {
          var sslPath = GetSslCertPath();
 
@@ -96,7 +94,7 @@ namespace RegressionTests.SSL
             Assert.Fail("Private key " + exampleKey + " was not found");
 
 
-         SSLCertificate sslCertificate = application.Settings.SSLCertificates.Add();
+         var sslCertificate = application.Settings.SSLCertificates.Add();
          sslCertificate.Name = "Example";
          sslCertificate.CertificateFile = exampleCert;
          sslCertificate.PrivateKeyFile = exampleKey;
@@ -104,8 +102,5 @@ namespace RegressionTests.SSL
 
          return sslCertificate;
       }
-
-
-
    }
 }

@@ -6,12 +6,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Authentication;
 using System.Text;
-using NUnit.Framework;
 
 namespace RegressionTests.Shared
 {
    /// <summary>
-   /// Summary description for SMTPSimulator.
+   ///    Summary description for SMTPSimulator.
    /// </summary>
    public class SmtpClientSimulator
    {
@@ -27,13 +26,11 @@ namespace RegressionTests.Shared
       public SmtpClientSimulator(bool useSSL, int port) :
          this(useSSL, port, IPAddress.Parse("127.0.0.1"))
       {
-
       }
 
       public SmtpClientSimulator(bool useSSL, int port, IPAddress ipaddress) :
          this(useSSL, SslProtocols.Default, port, ipaddress)
       {
-
       }
 
       public SmtpClientSimulator(bool useSSL, SslProtocols sslProtocols, int port, IPAddress ipaddress)
@@ -74,7 +71,7 @@ namespace RegressionTests.Shared
          errorMessage = SendAndReceive(base64Password + "\r\n");
          if (!errorMessage.StartsWith("235"))
             return false;
-         
+
          return true;
       }
 
@@ -104,7 +101,7 @@ namespace RegressionTests.Shared
       public string GetWelcomeMessage()
       {
          _tcpConnection.Connect(_port);
-         string sData = _tcpConnection.Receive();
+         var sData = _tcpConnection.Receive();
 
          _tcpConnection.Disconnect();
          return sData;
@@ -113,12 +110,10 @@ namespace RegressionTests.Shared
       public void Send(string sFrom, List<string> lstRecipients, string sSubject, string sBody)
       {
          if (!_tcpConnection.Connect(_ipaddress, _port))
-         {
             throw new DeliveryFailedException("Failed to connect to server");
-         }
 
          // Receive welcome message.
-         string sData = _tcpConnection.Receive();
+         var sData = _tcpConnection.Receive();
 
          _tcpConnection.Send("HELO 127.0.0.1\r\n");
          sData = _tcpConnection.Receive();
@@ -127,8 +122,8 @@ namespace RegressionTests.Shared
          _tcpConnection.Send("MAIL FROM:<" + sFrom + ">\r\n");
          sData = _tcpConnection.Receive();
 
-         string sCommaSeparatedRecipients = "";
-         foreach (string sRecipient in lstRecipients)
+         var sCommaSeparatedRecipients = "";
+         foreach (var sRecipient in lstRecipients)
          {
             _tcpConnection.Send("RCPT TO:<" + sRecipient + ">\r\n");
             sData = _tcpConnection.Receive();
@@ -170,17 +165,15 @@ namespace RegressionTests.Shared
 
          // Quit again
          _tcpConnection.Send("QUIT\r\n");
-         
+
          sData = _tcpConnection.Receive();
 
          _tcpConnection.Disconnect();
-
-         
       }
 
       public void Send(string sFrom, string sTo, string sSubject, string sBody)
       {
-         string result = "";
+         var result = "";
 
          Send(false, "", "", sFrom, sTo, sSubject, sBody, out result);
       }
@@ -190,7 +183,8 @@ namespace RegressionTests.Shared
          Send(false, "", "", sFrom, sTo, sSubject, sBody, out result);
       }
 
-      public void Send(bool useStartTls, string username, string password, string sFrom, string sTo, string sSubject, string sBody, out string errorMessage)
+      public void Send(bool useStartTls, string username, string password, string sFrom, string sTo, string sSubject,
+         string sBody, out string errorMessage)
       {
          string sData;
 
@@ -215,10 +209,8 @@ namespace RegressionTests.Shared
          }
 
          if (!string.IsNullOrEmpty(username))
-         {
             if (!Logon(EncodeBase64(username), EncodeBase64(password), out errorMessage))
                throw new DeliveryFailedException("Login failed: " + errorMessage);
-         }
 
          _tcpConnection.Send("HELO example.com\r\n");
          var helloResponse = _tcpConnection.Receive();
@@ -290,7 +282,7 @@ namespace RegressionTests.Shared
             throw new DeliveryFailedException("Unable to connect.");
 
          // Receive welcome message.
-         string sData = _tcpConnection.Receive();
+         var sData = _tcpConnection.Receive();
 
          _tcpConnection.Send("HELO 127.0.0.1\r\n");
          sData = _tcpConnection.Receive();
@@ -310,13 +302,18 @@ namespace RegressionTests.Shared
 
          _tcpConnection.Send(text);
 
-         _tcpConnection.Send("\r\n");
+         // RFC 5321: the dot terminator must be on its own line. Only add \r\n if
+         // the message does not already end with one, to avoid appending a spurious
+         // blank line that would alter the stored body content.
+         if (!text.EndsWith("\r\n"))
+            _tcpConnection.Send("\r\n");
+
          _tcpConnection.Send(".\r\n");
 
          // Wait for OK.
          sData = _tcpConnection.Receive();
 
-         bool success = sData.Substring(0, 3) == "250";
+         var success = sData.Substring(0, 3) == "250";
          if (!success)
             throw new DeliveryFailedException("Unexpected response from server: " + sData);
 
@@ -325,7 +322,6 @@ namespace RegressionTests.Shared
          sData = _tcpConnection.Receive();
 
          _tcpConnection.Disconnect();
-
       }
 
       public static void StaticSend(string sFrom, List<string> lstRecipients, string sSubject, string sBody)
@@ -351,17 +347,16 @@ namespace RegressionTests.Shared
 
       private string EncodeBase64(string s)
       {
-         byte[] bytes = Encoding.UTF8.GetBytes(s);
+         var bytes = Encoding.UTF8.GetBytes(s);
          return Convert.ToBase64String(bytes);
       }
 
 
-
       private static string GetCurrentMIMEDateTime()
       {
-         DateTime now = DateTime.Now;
+         var now = DateTime.Now;
 
-         string dayOfWeek = "";
+         var dayOfWeek = "";
          switch (now.DayOfWeek)
          {
             case DayOfWeek.Monday:
@@ -387,7 +382,7 @@ namespace RegressionTests.Shared
                break;
          }
 
-         string monthName = "";
+         var monthName = "";
          switch (now.Month)
          {
             case 1:
@@ -428,13 +423,11 @@ namespace RegressionTests.Shared
                break;
          }
 
-         string timeString = now.ToString("HH':'mm':'ss");
-         string dateString = string.Format("{0}, {1} {2} {3} {4} +0100", dayOfWeek, now.Day, monthName, now.Year,
-                                           timeString);
+         var timeString = now.ToString("HH':'mm':'ss");
+         var dateString = string.Format("{0}, {1} {2} {3} {4} +0100", dayOfWeek, now.Day, monthName, now.Year,
+            timeString);
 
          return dateString;
       }
-
-      
    }
 }

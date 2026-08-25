@@ -122,13 +122,17 @@ namespace HM
    }
 
    bool
-   FileUtilities::Move(const String &sFrom, const String &sTo, bool overwrite)
+   FileUtilities::Move(const String &sFrom, const String &sTo)
    {
       const int iMaxNumberOfTries = 5;
 
-      if (overwrite)
-         DeleteFile(sTo);
+      // Exponential backoff between retries: 150, 300, 600, 1200 ms.
+      // Total worst-case wait is 2250 ms, kept below 3 seconds on purpose.
+      const int iBaseDelayMs = 150;
+      int iDelayMs = iBaseDelayMs;
 
+      // boost::filesystem::rename maps to MoveFileExW with MOVEFILE_REPLACE_EXISTING,
+      // so an existing target is replaced atomically - no need to delete it first.
       for (int i = 1; i <= iMaxNumberOfTries; i++)
       {
          boost::system::error_code error_code;
@@ -149,8 +153,9 @@ namespace HM
             return false;
          }
 
-         // Some other process must have locked the file.
-         Sleep(250);
+         // Some other process must have locked the file. Wait, then back off exponentially.
+         Sleep(iDelayMs);
+         iDelayMs *= 2;
       }
 
       throw std::logic_error("Move file logic error.");
@@ -589,7 +594,7 @@ namespace HM
    }
 
    void FileUtilitiesTester::Test()
-   {  
+   {
       Assert::AreEqual("C:\\Temp", FileUtilities::Combine("C:\\", "Temp"));
       Assert::AreEqual("C:\\Temp", FileUtilities::Combine("C:\\", "\\Temp"));
       Assert::AreEqual("C:\\Temp", FileUtilities::Combine("C:", "\\Temp"));
@@ -604,5 +609,15 @@ namespace HM
       Assert::IsFalse(FileUtilities::IsFullPath("\\Test.eml"));
       Assert::IsFalse(FileUtilities::IsFullPath("Test.eml"));
       Assert::IsFalse(FileUtilities::IsFullPath("AB\\Data.eml"));
+
+      // Verify that Copy overwrites an existing destination file.
+      String sSrc = FileUtilities::GetTempFileName();
+      String sDst = FileUtilities::GetTempFileName();
+      FileUtilities::WriteToFile(sSrc, AnsiString("source"));
+      FileUtilities::WriteToFile(sDst, AnsiString("original"));
+      Assert::IsTrue(FileUtilities::Copy(sSrc, sDst, false));
+      Assert::AreEqual("source", FileUtilities::ReadCompleteTextFile(sDst));
+      FileUtilities::DeleteFile(sSrc);
+      FileUtilities::DeleteFile(sDst);
    }
 }

@@ -5,7 +5,6 @@
 #define PROPERTY_MAXSMTPCONNECTIONS             _T("maxsmtpconnections")
 #define PROPERTY_MIRROREMAILADDRESS             _T("mirroremailaddress")
 #define PROPERTY_AUTHALLOWPLAINTEXT             _T("authallowplaintext")
-#define PROPERTY_IMAPAUTHALLOWPLAINTEXT         _T("ImapAuthAllowPlainText")
 #define PROPERTY_ALLOWMAILFROMNULL              _T("allowmailfromnull")
 #define PROPERTY_LOGDEVICE                      _T("logdevice")
 #define PROPERTY_LOGGING                        _T("logging")
@@ -135,4 +134,8 @@
 
 #define PROPERTY_IPV6_PREFERRED  _T("IPv6Preferred")
 
-#define REQUIRED_DB_VERSION            5704
+#define PROPERTY_CREATE_DEFAULT_SPECIAL_USE_FOLDERS  _T("CreateDefaultSpecialUseFolders")
+
+#define PROPERTY_TLSOPTIONS                     _T("TlsOptions")
+
+#define REQUIRED_DB_VERSION            5709

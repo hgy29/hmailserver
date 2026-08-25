@@ -102,7 +102,7 @@ namespace HM
          
          pAddress->sPersonalName = Charset::Encode(sFullName);
          
-         // Remove <> from <test@test.com>
+         // Remove <> from <test@example.test>
          sMailbox.Replace(_T("<"), _T(""));      
          sDomain.Replace(_T(">"), _T(""));
    
@@ -305,9 +305,9 @@ namespace HM
       TestAddress_("test@example.com", "test@example.com", "test","example.com");
       TestAddress_("<martin@example.com>", "martin@example.com", "martin","example.com");
       TestAddress_("\"servizio@example.it\"<servizio@example.it>", "servizio@example.it", "servizio", "example.it");
-      TestAddress_("\"Martin Knafve\" <martin@test.com>", "Martin Knafve", "martin", "test.com");
+      TestAddress_("\"Martin Knafve\" <martin@example.test>", "Martin Knafve", "martin", "example.test");
       TestAddress_("Martin Knafve <test@domain.com>", "Martin Knafve", "test", "domain.com");      
-      TestAddress_("\"fdsa\\\"\" <test@test.com>", Charset::Encode("fdsa\""), "test", "test.com");      
+      TestAddress_("\"fdsa\\\"\" <test@example.test>", Charset::Encode("fdsa\""), "test", "example.test");      
       TestAddress_("Emanuele Example <emanuele@example.com>", "Emanuele Example", "emanuele", "example.com");      
       TestAddress_("Secunia Research <remove-vuln@example.com>", "Secunia Research", "remove-vuln", "example.com");      
       TestAddress_("bugtraq@securityfocus.com", "bugtraq@securityfocus.com", "bugtraq", "securityfocus.com");
@@ -317,7 +317,7 @@ namespace HM
 
       {  // MORE ADVANCED
          
-         String sTestStr = "\"Martin Knafve\" <martin@test.com>,   \"Test2 Testar\" <testa@testy.com>";
+         String sTestStr = "\"Martin Knafve\" <martin@example.test>,   \"Test2 Testar\" <testa@testy.com>";
 
          AddresslistParser* pParser= new AddresslistParser();
 
@@ -357,7 +357,7 @@ namespace HM
 
       {  // EVEN MORE ADVANCED. Two addresses seperated by tab, newline and space.
          
-         String sTestStr = "\"Martin Knafve\" <martin@test.com>, \r\n  \"Test2 Testar\" <testa@testy.com>";
+         String sTestStr = "\"Martin Knafve\" <martin@example.test>, \r\n  \"Test2 Testar\" <testa@testy.com>";
 
          AddresslistParser* pParser= new AddresslistParser();
 
@@ -397,7 +397,7 @@ namespace HM
 
       {  // EVEN MORE ADVANCED. Two addresses without <> around the addresses.
          
-         String sTestStr = "\"Martin Knafve\" <martin@test.com>, \"Test2 Testar\" <testa@testy.com>";
+         String sTestStr = "\"Martin Knafve\" <martin@example.test>, \"Test2 Testar\" <testa@testy.com>";
 
          AddresslistParser* pParser= new AddresslistParser();
 
@@ -424,7 +424,7 @@ namespace HM
             throw;
          }
 
-         if ((*iterFirst)->sDomainName != _T("test.com"))
+         if ((*iterFirst)->sDomainName != _T("example.test"))
          {
             assert(0);
             throw;
@@ -456,7 +456,7 @@ namespace HM
 
       {  // EVEN EVEN MORE ADVANCED. Two addresses without "" around the names.
          
-         String sTestStr = "MartinKnafve <martin@test.com>, EyyAo <testa@testy.com>";
+         String sTestStr = "MartinKnafve <martin@example.test>, EyyAo <testa@testy.com>";
 
          AddresslistParser* pParser= new AddresslistParser();
 
@@ -483,7 +483,7 @@ namespace HM
             throw;
          }
 
-         if ((*iterFirst)->sDomainName != _T("test.com"))
+         if ((*iterFirst)->sDomainName != _T("example.test"))
          {
             assert(0);
             throw;
@@ -537,8 +537,8 @@ namespace HM
 
       {  // SUPER advanced...
          
-         String sTestStr = "<test@test.com>, \"Martin Knafve\" <martin@halvar.com>, \r\n"
-                           "\"Martin Knafve\", test@test.com, Kalle";
+         String sTestStr = "<test@example.test>, \"Martin Knafve\" <martin@halvar.com>, \r\n"
+                           "\"Martin Knafve\", test@example.test, Kalle";
 
          AddresslistParser* pParser= new AddresslistParser();
 

@@ -15,7 +15,7 @@ namespace StressTest
         [SetUp]
         public new void SetUp()
         {
-            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+            SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
         }
 
         private void DeleteCurrentLog()

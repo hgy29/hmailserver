@@ -2,9 +2,8 @@
 // http://www.hmailserver.com
 
 using System;
-using NUnit.Framework;
 using hMailServer;
-using NUnit.Framework.Interfaces;
+using NUnit.Framework;
 using RegressionTests.Infrastructure;
 
 namespace RegressionTests.Shared
@@ -12,7 +11,7 @@ namespace RegressionTests.Shared
    public class TestFixtureBase
    {
       protected Application _application;
-      protected Domain _domain;  
+      protected Domain _domain;
       protected Settings _settings;
 
       [OneTimeSetUp]

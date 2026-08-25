@@ -15,7 +15,7 @@ namespace StressTest
       [Test]
       public void TestProcessLargeNumberOfMessages()
       {
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          var messages = new List<string>();
 
@@ -52,7 +52,7 @@ namespace StressTest
 
             fa.DownloadNow();
 
-            Pop3ClientSimulator.AssertMessageCount("test@test.com", "test", msgCount, TimeSpan.FromMinutes(60));
+            Pop3ClientSimulator.AssertMessageCount("test@example.test", "test", msgCount, TimeSpan.FromMinutes(60));
 
             pop3Server.WaitForCompletion();
 

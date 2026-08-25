@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Runtime.InteropServices;
 using hMailServer;
 using NUnit.Framework;
 using RegressionTests.Shared;
@@ -24,7 +21,6 @@ namespace RegressionTests.Infrastructure.Persistence
 
          var ex = Assert.Throws<COMException>(() => port.Save());
          StringAssert.Contains("Certificate must be specified.", ex.Message);
-
       }
 
       [Test]

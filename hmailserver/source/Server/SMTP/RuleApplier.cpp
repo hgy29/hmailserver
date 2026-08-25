@@ -20,7 +20,6 @@
 #include "../Common/Cache/CacheContainer.h"
 #include "../Common/Util/Time.h"
 #include "../Common/Util/RegularExpression.h"
-#include "../common/Util/MailerDaemonAddressDeterminer.h"
 
 #include "../Common/Persistence/PersistentMessage.h"
 
@@ -229,6 +228,17 @@ namespace HM
          return;
       }
 
+      std::shared_ptr<Message> pOriginalMessage = pMsgData->GetMessage();
+
+      if (!pOriginalMessage)
+         return;
+
+      if (pOriginalMessage->GetFlagSpam() && pAction->GetAbortSpamFlagged())
+      {
+         LOG_DEBUG("RuleApplier::ApplyAction_Forward aborted, message marked as spam");
+         return; // skip message flagged as spam
+      }
+
       std::shared_ptr<Message> pMsg = PersistentMessage::CopyToQueue(account, pMsgData->GetMessage());
 
       if (!pMsg)
@@ -249,10 +259,7 @@ namespace HM
       // We need to update the SMTP envelope from address, if this
       // message is forwarded by a user-level account.
       std::shared_ptr<CONST Account> pAccount = CacheContainer::Instance()->GetAccount(rule_account_id_);
-      String sMailerDaemonAddress = MailerDaemonAddressDeterminer::GetMailerDaemonAddress(pMsg);
-      if (pMsg->GetFromAddress().IsEmpty())
-         pMsg->SetFromAddress(sMailerDaemonAddress);
-      else if (pAccount && IniFileSettings::Instance()->GetRewriteEnvelopeFromWhenForwarding())
+      if (pAccount && IniFileSettings::Instance()->GetRewriteEnvelopeFromWhenForwarding() && !pMsg->GetFromAddress().IsEmpty())
          pMsg->SetFromAddress(pAccount->GetAddress());
       
       // Add new recipients
@@ -404,21 +411,25 @@ namespace HM
 	      return;
       }
 
-      std::shared_ptr<Account> emptyAccount;
+      std::shared_ptr<Message> pOriginalMessage = pMsgData->GetMessage();
 
-      // Send a copy of this email.
+      if (!pOriginalMessage)
+         return;
+
+      if (pOriginalMessage->GetFlagSpam() && pAction->GetAbortSpamFlagged())
+      {
+         LOG_DEBUG("RuleApplier::ApplyAction_Reply aborted, message marked as spam");
+         return; // skip message flagged as spam
+      }
+
+      // Reply to the email
       std::shared_ptr<Message> pMsg = std::shared_ptr<Message>(new Message());
       pMsg->SetState(Message::Delivering);
 
       String newMessageFileName = PersistentMessage::GetFileName(pMsg);
 
-      // check if this us a user-level account rule or global rule.
-      std::shared_ptr<CONST Account> pAccount = CacheContainer::Instance()->GetAccount(rule_account_id_);
-
       std::shared_ptr<MessageData> pNewMsgData = std::shared_ptr<MessageData>(new MessageData());
       pNewMsgData->LoadFromMessage(newMessageFileName, pMsg);
-      if (!pAccount)
-         pNewMsgData->SetReturnPath("");
       pNewMsgData->GenerateMessageID();
       pNewMsgData->SetTo(sReplyRecipientAddress);
       pNewMsgData->SetFrom(pAction->GetFromName() + " <" + pAction->GetFromAddress() + ">");
@@ -429,18 +440,12 @@ namespace HM
       pNewMsgData->IncreaseRuleLoopCount();
       pNewMsgData->Write(newMessageFileName);
 
-      // We need to update the SMTP envelope from address, if this
-      // message is replied to by a user-level account.
-      if (pAccount)
-	      pMsg->SetFromAddress(pAccount->GetAddress());
-
       // Add recipients.
       bool recipientOK = false;
       RecipientParser recipientParser;
       recipientParser.CreateMessageRecipientList(sReplyRecipientAddress, pMsg->GetRecipients(), recipientOK);
 
       PersistentMessage::SaveObject(pMsg);
-
    }
 
    bool

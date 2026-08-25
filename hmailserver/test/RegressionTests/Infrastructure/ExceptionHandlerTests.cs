@@ -1,7 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.ServiceProcess;
 using NUnit.Framework;
 using RegressionTests.Shared;
 
@@ -15,9 +13,7 @@ namespace RegressionTests.Infrastructure
       {
          if (Environment.OSVersion.Version.Major == 5 &&
              Environment.OSVersion.Version.Minor == 0)
-         {
             Assert.Pass("This functionality is not supported on Windows 2000.");
-         }
       }
 
       [TearDown]
@@ -73,8 +69,6 @@ namespace RegressionTests.Infrastructure
 
          TriggerCrashSimulationError();
          AssertMinidumpsGeneratedAndErrorsLogged(1, true, "Message: Crash simulation test");
-
-         
       }
 
       [Test]
@@ -83,7 +77,7 @@ namespace RegressionTests.Infrastructure
          _settings.CrashSimulationMode = 3;
 
          TriggerCrashSimulationError();
-  
+
          AssertMinidumpsGeneratedAndErrorsLogged(1, true,
             "An error has been detected. A mini dump has been written");
       }
@@ -93,10 +87,7 @@ namespace RegressionTests.Infrastructure
       {
          _settings.CrashSimulationMode = 4;
 
-         for (int i = 0; i < 20; i++)
-         {
-            TriggerCrashSimulationError();   
-         }
+         for (var i = 0; i < 20; i++) TriggerCrashSimulationError();
 
          AssertMinidumpsGeneratedAndErrorsLogged(0, false);
 
@@ -110,18 +101,19 @@ namespace RegressionTests.Infrastructure
          _settings.CrashSimulationMode = 3;
 
          // 11 errors triggered, but only 10 should generate minidumps.
-         for (int i = 1; i <= 11; i++)
+         for (var i = 1; i <= 11; i++)
             TriggerCrashSimulationError();
 
          AssertMinidumpsGeneratedAndErrorsLogged(10, false);
 
          // We should log info that we skipped minidump generation.
          RetryHelper.TryAction(TimeSpan.FromSeconds(5), () =>
-            {
-               var log = LogHandler.ReadCurrentDefaultLog();
+         {
+            var log = LogHandler.ReadCurrentDefaultLog();
 
-               RetryableAssert.IsTrue(log.Contains("Minidump creation aborted. The max count (10) is reached and no log is older than 4 hours."));
-            });
+            RetryableAssert.IsTrue(log.Contains(
+               "Minidump creation aborted. The max count (10) is reached and no log is older than 4 hours."));
+         });
 
 
          // Delete one minidump, so only 9 remains.
@@ -140,32 +132,33 @@ namespace RegressionTests.Infrastructure
          _settings.CrashSimulationMode = 3;
 
          // 11 errors triggered, but only 10 should generate minidumps.
-         for (int i = 1; i <= 11; i++)
+         for (var i = 1; i <= 11; i++)
             TriggerCrashSimulationError();
 
          AssertMinidumpsGeneratedAndErrorsLogged(10, false);
-         
+
          // We should log info that we skipped minidump generation.
          RetryHelper.TryAction(TimeSpan.FromSeconds(5), () =>
          {
             var log = LogHandler.ReadCurrentDefaultLog();
-            RetryableAssert.IsTrue(log.Contains("Minidump creation aborted. The max count (10) is reached and no log is older than 4 hours."));
+            RetryableAssert.IsTrue(log.Contains(
+               "Minidump creation aborted. The max count (10) is reached and no log is older than 4 hours."));
          });
 
          // Pretend one minidump is really old.
          var minidumps = GetMinidumps();
          var testminidump = minidumps[0];
-         File.SetCreationTime(testminidump, new DateTime(2014,01,01));
+         File.SetCreationTime(testminidump, new DateTime(2014, 01, 01));
 
 
          // Now we should be able to create another.
          TriggerCrashSimulationError();
 
          RetryHelper.TryAction(TimeSpan.FromSeconds(10), () =>
-            {
-               if (File.Exists(testminidump))
-                  throw new Exception("Mini dump exists");
-            });
+         {
+            if (File.Exists(testminidump))
+               throw new Exception("Mini dump exists");
+         });
 
          AssertMinidumpsGeneratedAndErrorsLogged(10, true);
       }
@@ -187,24 +180,20 @@ namespace RegressionTests.Infrastructure
          {
             var minidumps = GetMinidumps();
             if (count != minidumps.Length)
-               throw new Exception(string.Format("Unexpected minidump count, Actual: {0}, Expected: {1}", minidumps.Length, count));
+               throw new Exception(string.Format("Unexpected minidump count, Actual: {0}, Expected: {1}",
+                  minidumps.Length, count));
 
             if (count > 0 || expectedLoggedErrors.Length > 0)
             {
-               string errorLog = LogHandler.ReadErrorLog();
+               var errorLog = LogHandler.ReadErrorLog();
                foreach (var minidump in minidumps)
-               {
                   if (!errorLog.Contains(minidump))
                      throw new Exception(errorLog);
-               }
 
                foreach (var expectedLoggedError in expectedLoggedErrors)
-               {
                   if (!errorLog.Contains(expectedLoggedError))
                      throw new Exception(errorLog);
-               }
             }
-
          });
 
          if (delete)
@@ -213,6 +202,5 @@ namespace RegressionTests.Infrastructure
             LogHandler.DeleteErrorLog();
          }
       }
-
    }
 }

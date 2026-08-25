@@ -66,7 +66,9 @@ namespace HM
       // SpamAssassin default rules and custom rules also rely on Return-Path header being present
       // We delete this header again after SpamAssassin checking has completed
       std::vector<std::pair<AnsiString, AnsiString>> fieldsToWrite;
-      fieldsToWrite.push_back(std::make_pair("Return-Path", pTestData->GetEnvelopeFrom()));
+      String sEnvelopeFrom = pTestData->GetEnvelopeFrom();
+      AnsiString sReturnPath = sEnvelopeFrom.IsEmpty() ? "<>" : "<" + sEnvelopeFrom + ">";
+      fieldsToWrite.push_back(std::make_pair("Return-Path", sReturnPath));
          
       TraceHeaderWriter writer;
       writer.Write(sFilename, pMessage, fieldsToWrite);
@@ -76,7 +78,7 @@ namespace HM
       bool testCompleted;
 
       std::shared_ptr<Event> disconnectEvent = std::shared_ptr<Event>(new Event());
-      std::shared_ptr<SpamAssassinClient> pSAClient = std::shared_ptr<SpamAssassinClient>(new SpamAssassinClient(sFilename, pIOService->GetIOService(), pIOService->GetClientContext(), disconnectEvent, testCompleted));
+      std::shared_ptr<SpamAssassinClient> pSAClient = std::shared_ptr<SpamAssassinClient>(new SpamAssassinClient(sFilename, pIOService->GetIOContext(), pIOService->GetClientContext(), disconnectEvent, testCompleted));
       
       String sHost = config.GetSpamAssassinHost();
       int iPort = config.GetSpamAssassinPort();

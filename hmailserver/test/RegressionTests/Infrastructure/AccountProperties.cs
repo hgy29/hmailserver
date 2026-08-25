@@ -4,7 +4,6 @@
 using System;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure
 {
@@ -16,18 +15,18 @@ namespace RegressionTests.Infrastructure
       [Description("Ensure that non-empty account size is reported properly")]
       public void SizeAfterSend()
       {
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@test.com",
-                                                                            "test");
+         var domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@example.test",
+            "test");
 
          // Send a message
-         for (int i = 0; i < 30; i++)
-            SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "Test message",
-                                           "123456789012345678901234567890123456789012345678901234567890");
+         for (var i = 0; i < 30; i++)
+            SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "Test message",
+               "123456789012345678901234567890123456789012345678901234567890");
 
-         ImapClientSimulator.AssertMessageCount("test@test.com", "test", "Inbox", 30);
+         ImapClientSimulator.AssertMessageCount("test@example.test", "test", "Inbox", 30);
 
-         float size = account.Size;
+         var size = account.Size;
          if (size == 0)
             throw new Exception("Account is empty");
       }
@@ -37,10 +36,10 @@ namespace RegressionTests.Infrastructure
       [Description("Ensure that empty account size is reported properly")]
       public void SizeBeforeSend()
       {
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@test.com", "test");
+         var domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@example.test", "test");
 
-         if ((int) account.Size != 0)
+         if ((int)account.Size != 0)
             throw new Exception("Account is not empty");
       }
 
@@ -49,22 +48,22 @@ namespace RegressionTests.Infrastructure
       [Description("Ensure that account size is increased when a message is received.")]
       public void SizeIncreasedWhenMessageReceived()
       {
-         Domain domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@test.com",
-                                                                            "test");
+         var domain = SingletonProvider<TestSetup>.Instance.AddTestDomain();
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(domain, "test@example.test",
+            "test");
 
-         string body = TestSetup.CreateLargeDummyMailBody();
+         var body = TestSetup.CreateLargeDummyMailBody();
 
          // Send a message
-         SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "Test message", body);
-         ImapClientSimulator.AssertMessageCount("test@test.com", "test", "Inbox", 1);
+         SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "Test message", body);
+         ImapClientSimulator.AssertMessageCount("test@example.test", "test", "Inbox", 1);
 
-         float sizeBefore = account.Size;
+         var sizeBefore = account.Size;
 
-         SmtpClientSimulator.StaticSend("test@test.com", "test@test.com", "Test message", body);
-         ImapClientSimulator.AssertMessageCount("test@test.com", "test", "Inbox", 2);
+         SmtpClientSimulator.StaticSend("test@example.test", "test@example.test", "Test message", body);
+         ImapClientSimulator.AssertMessageCount("test@example.test", "test", "Inbox", 2);
 
-         float sizeAfter = account.Size;
+         var sizeAfter = account.Size;
 
          Assert.Greater(sizeAfter, sizeBefore);
       }

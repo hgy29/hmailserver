@@ -22,7 +22,7 @@
 //         var accounts = new List<string>();
 //         for (int accountIdx = 0; accountIdx < accountCount; accountIdx++)
 //         {
-//            var account = string.Format("test-{0}@test.com", accountIdx);
+//            var account = string.Format("test-{0}@example.test", accountIdx);
 //            accounts.Add(account);
             
 //            TestTracer.WriteTraceInfo("Setting up {0}...", account);

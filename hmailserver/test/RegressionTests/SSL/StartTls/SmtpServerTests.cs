@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.Remoting;
-using System.Text;
-using System.Threading;
-using hMailServer;
+﻿using System.Threading;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
@@ -116,7 +110,6 @@ namespace RegressionTests.SSL.StartTls
          Assert.IsTrue(default_log.Contains("Version: TLS"));
          Assert.IsTrue(default_log.Contains("Cipher: "));
          Assert.IsTrue(default_log.Contains("Bits: "));
-
       }
 
       [Test]
@@ -151,7 +144,8 @@ namespace RegressionTests.SSL.StartTls
       [Test]
       public void IfStlsOptionalButSslRequiredByIpRangeForAuthThenAuthShouldFail()
       {
-         var range = SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges.get_ItemByName("My computer");
+         var range = SingletonProvider<TestSetup>.Instance.GetApp().Settings.SecurityRanges
+            .get_ItemByName("My computer");
          range.RequireSSLTLSForAuth = true;
          range.Save();
 
@@ -162,7 +156,9 @@ namespace RegressionTests.SSL.StartTls
          Assert.IsTrue(capabilities1.Contains("STARTTLS"));
 
          var loginResult = smtpClientSimulator.SendAndReceive("AUTH LOGIN\r\n");
-         Assert.IsTrue(loginResult.StartsWith("530 A SSL/TLS-connection is required for authentication.")); // must run starttls first.
+         Assert.IsTrue(
+            loginResult.StartsWith(
+               "530 A SSL/TLS-connection is required for authentication.")); // must run starttls first.
       }
 
 

@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using hMailServer;
 using Microsoft.VisualBasic;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.API
 {
@@ -21,26 +21,26 @@ namespace RegressionTests.API
       {
          var smtp = new SmtpClientSimulator();
          var recipients = new List<string>();
-         recipients.Add("test@test.com");
-         smtp.Send("test@test.com", recipients, "Test", "Test message");
+         recipients.Add("test@example.test");
+         smtp.Send("test@example.test", recipients, "Test", "Test message");
       }
 
       [Test]
       public void BlowfishEncryptShouldNotRequireAdminPrivileges()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          var newApp = new Application();
          Assert.IsNotNull(newApp.Authenticate(account.Address, "test"));
 
-         Utilities utilities = newApp.Utilities;
+         var utilities = newApp.Utilities;
 
-         string encryptedResult = utilities.BlowfishEncrypt("Test");
+         var encryptedResult = utilities.BlowfishEncrypt("Test");
          Assert.AreNotEqual("Test", encryptedResult, encryptedResult);
 
-         string decrypted = utilities.BlowfishDecrypt(encryptedResult);
+         var decrypted = utilities.BlowfishDecrypt(encryptedResult);
          Assert.AreEqual("Test", decrypted, decrypted);
       }
 
@@ -48,25 +48,25 @@ namespace RegressionTests.API
       [Description("Issue 210, Duplicate UIDS when COM Messages.Add is used")]
       public void TestAddMessage()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Utilities utilities = app.Utilities;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var utilities = app.Utilities;
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Create a new folder.
-         IMAPFolder folder = account.IMAPFolders.get_ItemByName("INBOX");
+         var folder = account.IMAPFolders.get_ItemByName("INBOX");
          folder.Save();
 
-         for (int i = 0; i < 3; i++)
+         for (var i = 0; i < 3; i++)
          {
-            hMailServer.Message message = folder.Messages.Add();
+            var message = folder.Messages.Add();
             message.set_Flag(eMessageFlag.eMFSeen, true);
             message.Save();
 
-            Pop3ClientSimulator.AssertMessageCount(account.Address, "test", ((i + 1)*2) - 1);
+            Pop3ClientSimulator.AssertMessageCount(account.Address, "test", (i + 1) * 2 - 1);
 
             SmtpClientSimulator.StaticSend("test@example.com", account.Address, "Test", "Test");
-            Pop3ClientSimulator.AssertMessageCount(account.Address, "test", (i + 1)*2);
+            Pop3ClientSimulator.AssertMessageCount(account.Address, "test", (i + 1) * 2);
          }
 
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 6);
@@ -75,21 +75,21 @@ namespace RegressionTests.API
          sim.ConnectAndLogon(account.Address, "test");
          sim.SelectFolder("Inbox");
 
-         string response = sim.Fetch("1:6 UID");
+         var response = sim.Fetch("1:6 UID");
 
-         string[] lines = Strings.Split(response, Environment.NewLine, -1, CompareMethod.Text);
+         var lines = Strings.Split(response, Environment.NewLine, -1, CompareMethod.Text);
 
          var uids = new List<string>();
 
-         foreach (string line in lines)
+         foreach (var line in lines)
          {
-            int paraPos = line.IndexOf("(");
-            int paraEndPos = line.IndexOf(")");
+            var paraPos = line.IndexOf("(");
+            var paraEndPos = line.IndexOf(")");
 
             if (paraPos < 0 || paraEndPos < 0)
                continue;
 
-            string paraContent = line.Substring(paraPos + 1, paraEndPos - paraPos - 1);
+            var paraContent = line.Substring(paraPos + 1, paraEndPos - paraPos - 1);
 
             if (!uids.Contains(paraContent))
                uids.Add(paraContent);
@@ -111,37 +111,37 @@ namespace RegressionTests.API
       [Description("Add text to an empty body during sending of attachments")]
       public void TestAddTextToEmptyBody()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Send a message to the account.
-         string messageText = @"Date: Thu, 03 Jul 2008 22:01:53 +0200\r\n" +
-                              "From: Test <test@test.com>\r\n" +
-                              "MIME-Version: 1.0\r\n" +
-                              "To: test@test.com\r\n" +
-                              "Subject: test\r\n" +
-                              "Content-Type: multipart/mixed;\r\n" +
-                              "  boundary=\"------------050908050500020808050006\"\r\n" +
-                              "\r\n" +
-                              "This is a multi-part message in MIME format.\r\n" +
-                              "--------------050908050500020808050006\r\n" +
-                              "Content-Type: text/plain; charset=ISO-8859-1; format=flowed\r\n" +
-                              "Content-Transfer-Encoding: 7bit\r\n" +
-                              "\r\n" +
-                              "Test\r\n" +
-                              "\r\n" +
-                              "--------------050908050500020808050006\r\n" +
-                              "Content-Type: text/plain;\r\n" +
-                              " name=\"AUTOEXEC.BAT\"\r\n" +
-                              "Content-Transfer-Encoding: base64\r\n" +
-                              "Content-Disposition: inline;\r\n" +
-                              " filename=\"AUTOEXEC.BAT\"\r\n" +
-                              "\r\n" +
-                              "\r\n" +
-                              "--------------050908050500020808050006--\r\n";
+         var messageText = @"Date: Thu, 03 Jul 2008 22:01:53 +0200\r\n" +
+                           "From: Test <test@example.test>\r\n" +
+                           "MIME-Version: 1.0\r\n" +
+                           "To: test@example.test\r\n" +
+                           "Subject: test\r\n" +
+                           "Content-Type: multipart/mixed;\r\n" +
+                           "  boundary=\"------------050908050500020808050006\"\r\n" +
+                           "\r\n" +
+                           "This is a multi-part message in MIME format.\r\n" +
+                           "--------------050908050500020808050006\r\n" +
+                           "Content-Type: text/plain; charset=ISO-8859-1; format=flowed\r\n" +
+                           "Content-Transfer-Encoding: 7bit\r\n" +
+                           "\r\n" +
+                           "Test\r\n" +
+                           "\r\n" +
+                           "--------------050908050500020808050006\r\n" +
+                           "Content-Type: text/plain;\r\n" +
+                           " name=\"AUTOEXEC.BAT\"\r\n" +
+                           "Content-Transfer-Encoding: base64\r\n" +
+                           "Content-Disposition: inline;\r\n" +
+                           " filename=\"AUTOEXEC.BAT\"\r\n" +
+                           "\r\n" +
+                           "\r\n" +
+                           "--------------050908050500020808050006--\r\n";
 
-         SmtpClientSimulator.StaticSendRaw("test@test.com", "test@test.com", messageText);
+         SmtpClientSimulator.StaticSendRaw("test@example.test", "test@example.test", messageText);
 
-         hMailServer.Message message =
+         var message =
             CustomAsserts.AssertRetrieveFirstMessage(account1.IMAPFolders.get_ItemByName("INBOX"));
          Assert.AreEqual(1, message.Attachments.Count);
          Assert.AreEqual("AUTOEXEC.BAT", message.Attachments[0].Filename);
@@ -151,20 +151,20 @@ namespace RegressionTests.API
       [Description("Issue 210, Duplicate UIDS when COM Messages.Add is used")]
       public void TestCopyMessage()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Utilities utilities = app.Utilities;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var utilities = app.Utilities;
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Create a new folder.
-         IMAPFolder folder = account.IMAPFolders.get_ItemByName("INBOX");
+         var folder = account.IMAPFolders.get_ItemByName("INBOX");
          folder.Save();
 
-         IMAPFolder someOtherFolder = account.IMAPFolders.Add("SomeOtherFolder");
+         var someOtherFolder = account.IMAPFolders.Add("SomeOtherFolder");
 
-         for (int i = 0; i < 3; i++)
+         for (var i = 0; i < 3; i++)
          {
-            hMailServer.Message message = folder.Messages.Add();
+            var message = folder.Messages.Add();
             message.set_Flag(eMessageFlag.eMFSeen, true);
             message.Save();
 
@@ -174,9 +174,9 @@ namespace RegressionTests.API
          SmtpClientSimulator.StaticSend("test@example.com", account.Address, "Test", "Test");
 
          // Copy back to inbox.
-         for (int i = 0; i < 3; i ++)
+         for (var i = 0; i < 3; i++)
          {
-            hMailServer.Message message = someOtherFolder.Messages[i];
+            var message = someOtherFolder.Messages[i];
             message.Copy(folder.ID);
          }
 
@@ -185,21 +185,21 @@ namespace RegressionTests.API
          var sim = new ImapClientSimulator();
          sim.ConnectAndLogon(account.Address, "test");
          sim.SelectFolder("Inbox");
-         string response = sim.Fetch("1:7 UID");
+         var response = sim.Fetch("1:7 UID");
 
-         string[] lines = Strings.Split(response, Environment.NewLine, -1, CompareMethod.Text);
+         var lines = Strings.Split(response, Environment.NewLine, -1, CompareMethod.Text);
 
          var uids = new List<string>();
 
-         foreach (string line in lines)
+         foreach (var line in lines)
          {
-            int paraPos = line.IndexOf("(");
-            int paraEndPos = line.IndexOf(")");
+            var paraPos = line.IndexOf("(");
+            var paraEndPos = line.IndexOf(")");
 
             if (paraPos < 0 || paraEndPos < 0)
                continue;
 
-            string paraContent = line.Substring(paraPos + 1, paraEndPos - paraPos - 1);
+            var paraContent = line.Substring(paraPos + 1, paraEndPos - paraPos - 1);
 
             if (!uids.Contains(paraContent))
                uids.Add(paraContent);
@@ -219,8 +219,8 @@ namespace RegressionTests.API
       [Test]
       public void TestCriteriaMatching()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Utilities utilities = app.Utilities;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var utilities = app.Utilities;
 
          Assert.IsTrue(utilities.CriteriaMatch("Test", eRuleMatchType.eMTEquals, "Test"));
          Assert.IsFalse(utilities.CriteriaMatch("Testa", eRuleMatchType.eMTEquals, "Test"));
@@ -232,7 +232,7 @@ namespace RegressionTests.API
       [Test]
       public void TestDomainDeletion()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
 
          Assert.IsNotNull(app.Links.get_Domain(_domain.ID));
 
@@ -253,27 +253,27 @@ namespace RegressionTests.API
       [Test]
       public void TestEventLog()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
          // First set up a script
-         string script =
+         var script =
             @"Sub OnAcceptMessage(oClient, message)
                                EventLog.Write(""HOWDY"")
                               End Sub";
 
-         Scripting scripting = _settings.Scripting;
-         string file = scripting.CurrentScriptFile;
+         var scripting = _settings.Scripting;
+         var file = scripting.CurrentScriptFile;
          File.WriteAllText(file, script);
          scripting.Enabled = true;
          scripting.Reload();
 
          // Drop the current event log
-         string eventLogFile = _settings.Logging.CurrentEventLog;
+         var eventLogFile = _settings.Logging.CurrentEventLog;
 
          LogHandler.DeleteEventLog();
 
          // Add an account and send a message to it.
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          SendMessageToTest();
 
@@ -282,7 +282,7 @@ namespace RegressionTests.API
          CustomAsserts.AssertFileExists(eventLogFile, false);
 
          // Check that it starts with Unicode markers.
-         for (int i = 0; i <= 400; i++)
+         for (var i = 0; i <= 400; i++)
          {
             try
             {
@@ -315,13 +315,13 @@ namespace RegressionTests.API
       {
          // Create a test account
          // Fetch the default domain
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "folder@test.com", "test");
-         IMAPFolder folder = account1.IMAPFolders.Add("TestFolder1");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "folder@example.test", "test");
+         var folder = account1.IMAPFolders.Add("TestFolder1");
          folder.Save();
 
          var simulator1 = new ImapClientSimulator();
          simulator1.ConnectAndLogon(account1.Address, "test");
-         string result = simulator1.List();
+         var result = simulator1.List();
          Assert.IsTrue(result.Contains(folder.Name));
          simulator1.Disconnect();
 
@@ -337,17 +337,17 @@ namespace RegressionTests.API
       [Test]
       public void TestIMAPFolderPermissionAccessGroup()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
 
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@test.com", "test");
-         Group group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "account1@example.test", "test");
+         var group = SingletonProvider<TestSetup>.Instance.AddGroup("TestGroup");
 
-         IMAPFolders publicFolders = _settings.PublicFolders;
-         IMAPFolder folder = publicFolders.Add("Share1");
+         var publicFolders = _settings.PublicFolders;
+         var folder = publicFolders.Add("Share1");
          folder.Save();
 
-         IMAPFolderPermission permission = folder.Permissions.Add();
+         var permission = folder.Permissions.Add();
          permission.PermissionGroupID = group.ID;
          permission.PermissionType = eACLPermissionType.ePermissionTypeGroup;
          permission.Save();
@@ -365,36 +365,36 @@ namespace RegressionTests.API
       [Test]
       public void TestInternalDateCombinedWithOnDeliverMessage()
       {
-         Application application = SingletonProvider<TestSetup>.Instance.GetApp();
-         Scripting scripting = _settings.Scripting;
+         var application = SingletonProvider<TestSetup>.Instance.GetApp();
+         var scripting = _settings.Scripting;
          scripting.Language = "JScript";
          // First set up a script
-         string script =
+         var script =
             @"function OnDeliverMessage(message)
                            {
                                EventLog.Write(message.InternalDate);
                            }";
 
 
-         string file = scripting.CurrentScriptFile;
+         var file = scripting.CurrentScriptFile;
          File.WriteAllText(file, script);
          scripting.Enabled = true;
          scripting.Reload();
 
          // Add an account and send a message to it.
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          SmtpClientSimulator.StaticSend(account1.Address, account1.Address, "Test", "SampleBody");
 
          Pop3ClientSimulator.AssertMessageCount(account1.Address, "test", 1);
-         string text = TestSetup.ReadExistingTextFile(_settings.Logging.CurrentEventLog);
+         var text = TestSetup.ReadExistingTextFile(_settings.Logging.CurrentEventLog);
 
-         string[] columns = text.Split('\t');
+         var columns = text.Split('\t');
 
          if (columns.Length != 3)
             Assert.Fail("Wrong number of cols: " + text);
 
-         string lastColumn = columns[columns.Length - 1];
+         var lastColumn = columns[columns.Length - 1];
 
          Assert.IsFalse(lastColumn.Contains("00:00:00"), lastColumn);
          Assert.IsTrue(lastColumn.Contains(DateTime.Now.Year.ToString()), lastColumn);
@@ -407,20 +407,20 @@ namespace RegressionTests.API
       [Description("Test that live log works and that it's reset when enabled.")]
       public void TestLiveLog()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Utilities utilities = app.Utilities;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var utilities = app.Utilities;
 
-         Logging logging = app.Settings.Logging;
+         var logging = app.Settings.Logging;
 
          logging.EnableLiveLogging(true);
 
          // Add an account and send a message to it.
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Test", "SampleBody");
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
-         string liveLog = logging.LiveLog;
+         var liveLog = logging.LiveLog;
          Assert.IsTrue(liveLog.Length > 0, liveLog);
 
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Test", "SampleBody");
@@ -435,21 +435,21 @@ namespace RegressionTests.API
       [Test]
       public void TestReinitialize()
       {
-         string @messageText =
-            "From: test@test.com\r\n" +
+         var messageText =
+            "From: test@example.test\r\n" +
             "\r\n" +
             "WhatTest\r\n";
 
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "First message",
-                                                      "Test message");
+            "Test message");
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
          // Create another message on disk and import it.
-         string domainPath = Path.Combine(_application.Settings.Directories.DataDirectory, "test.com");
-         string accountPath = Path.Combine(domainPath, "test");
+         var domainPath = Path.Combine(_application.Settings.Directories.DataDirectory, "example.test");
+         var accountPath = Path.Combine(domainPath, "test");
          Directory.CreateDirectory(accountPath);
-         string fileName = Path.Combine(accountPath, "something.eml");
+         var fileName = Path.Combine(accountPath, "something.eml");
          File.WriteAllText(fileName, messageText);
          Assert.IsTrue(_application.Utilities.ImportMessageFromFile(fileName, account.ID));
 
@@ -473,16 +473,16 @@ namespace RegressionTests.API
       [Test]
       public void TestRetrieveMessageID()
       {
-         Application app = SingletonProvider<TestSetup>.Instance.GetApp();
-         Utilities utilities = app.Utilities;
+         var app = SingletonProvider<TestSetup>.Instance.GetApp();
+         var utilities = app.Utilities;
 
          // Add an account and send a message to it.
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          SmtpClientSimulator.StaticSend(account.Address, account.Address, "Test", "SampleBody");
          Pop3ClientSimulator.AssertMessageCount(account.Address, "test", 1);
 
-         hMailServer.Message message = account.IMAPFolders.get_ItemByName("INBOX").Messages[0];
+         var message = account.IMAPFolders.get_ItemByName("INBOX").Messages[0];
 
          Assert.AreEqual(message.ID, utilities.RetrieveMessageID(message.Filename));
          Assert.AreEqual(0, utilities.RetrieveMessageID(@"C:\some\nonexistant\file"));
@@ -492,7 +492,7 @@ namespace RegressionTests.API
       [Description("Issue 368, Routes.ItemByName returns invalid object")]
       public void TestRetrieveNonexistantRoute()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
          var ex = Assert.Throws<COMException>(() => settings.Routes.get_ItemByName("whatever.com"));
          StringAssert.Contains("Invalid index.", ex.Message);
       }
@@ -500,17 +500,17 @@ namespace RegressionTests.API
       [Test]
       public void TestSaveMessageInExistingIMAPFolder()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
 
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Check that the message does not exist
          Pop3ClientSimulator.AssertMessageCount(account1.Address, "test", 0);
 
          // Send a message to the account.
-         IMAPFolder folder = account1.IMAPFolders.get_ItemByName("INBOX");
+         var folder = account1.IMAPFolders.get_ItemByName("INBOX");
 
-         hMailServer.Message message = folder.Messages.Add();
+         var message = folder.Messages.Add();
 
          Assert.AreEqual(0, message.State);
 
@@ -523,7 +523,7 @@ namespace RegressionTests.API
          Assert.IsTrue(message.Filename.Contains(_domain.Name));
 
          // Check that the message exists
-         string firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
+         var firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
 
          Assert.IsNotEmpty(firstMessageText);
          Assert.Less(0, firstMessageText.IndexOf("Hej"));
@@ -532,14 +532,14 @@ namespace RegressionTests.API
       [Test]
       public void TestSaveMessageInPublicIMAPFolder()
       {
-         Settings settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
-         IMAPFolders publicFolders = settings.PublicFolders;
+         var settings = SingletonProvider<TestSetup>.Instance.GetApp().Settings;
+         var publicFolders = settings.PublicFolders;
 
-         IMAPFolder testFolder = publicFolders.Add("TestFolder");
+         var testFolder = publicFolders.Add("TestFolder");
          testFolder.Save();
 
          // Send a message to the account.
-         hMailServer.Message message = testFolder.Messages.Add();
+         var message = testFolder.Messages.Add();
 
          Assert.AreEqual(0, message.State);
 
@@ -555,7 +555,7 @@ namespace RegressionTests.API
       [Test]
       public void TestSendMessage()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          // Send a message to the account.
          var message = new hMailServer.Message();
@@ -570,7 +570,7 @@ namespace RegressionTests.API
          Assert.AreEqual(1, message.State);
 
          // Check that the message exists
-         string firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
+         var firstMessageText = Pop3ClientSimulator.AssertGetFirstMessageText(account1.Address, "test");
 
          Assert.IsNotEmpty(firstMessageText);
          Assert.Less(0, firstMessageText.IndexOf("Hej"));

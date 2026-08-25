@@ -1,12 +1,10 @@
 ﻿// Copyright (c) 2010 Martin Knafve / hMailServer.com.  
 // http://www.hmailserver.com
 
-using System;
 using System.Security.Authentication;
 using NUnit.Framework;
 using RegressionTests.Infrastructure;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Security
 {
@@ -16,7 +14,7 @@ namespace RegressionTests.Security
       [Test]
       public void TestEmptyPassword()
       {
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "");
 
          string message;
          var sim = new Pop3ClientSimulator();
@@ -28,7 +26,8 @@ namespace RegressionTests.Security
          Assert.AreEqual("A01 NO Invalid user name or password.\r\n", message);
 
          var simSMTP = new SmtpClientSimulator();
-         CustomAsserts.Throws<AuthenticationException>(() => simSMTP.ConnectAndLogon("dGVzdEB0ZXN0LmNvbQ==", "", out message));
+         CustomAsserts.Throws<AuthenticationException>(() =>
+            simSMTP.ConnectAndLogon("dGVzdEB0ZXN0LmNvbQ==", "", out message));
          Assert.AreEqual("535 Authentication failed. Restarting authentication process.\r\n", message);
       }
    }

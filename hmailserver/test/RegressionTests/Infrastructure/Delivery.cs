@@ -4,22 +4,17 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using RegressionTests.Shared;
-using hMailServer;
 
 namespace RegressionTests.Infrastructure
 {
    [TestFixture]
    public class BasicTests : TestFixtureBase
    {
-      #region Setup/Teardown
-
       [SetUp]
       public new void SetUp()
       {
          SingletonProvider<TestSetup>.Instance.DisableSpamProtection();
       }
-
-      #endregion
 
       [Test]
       public void TestAliases()
@@ -27,19 +22,19 @@ namespace RegressionTests.Infrastructure
          // Fetch default domain
 
          // Create another account
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test2@example.test", "test");
 
          // Add aliases
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "alias1@test.com", "test2@test.com");
-         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "alias2@test.com", "test2@test.com");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "alias1@example.test", "test2@example.test");
+         SingletonProvider<TestSetup>.Instance.AddAlias(_domain, "alias2@example.test", "test2@example.test");
          var smtpClientSimulator = new SmtpClientSimulator();
 
          // Spam folder
-         smtpClientSimulator.Send("test@test.com", "test2@test.com", "Mail 1", "Mail 1");
-         smtpClientSimulator.Send("test@test.com", "alias1@test.com", "Mail 2", "Mail 2");
-         smtpClientSimulator.Send("test@test.com", "alias2@test.com", "Mail 3", "Mail 3");
+         smtpClientSimulator.Send("test@example.test", "test2@example.test", "Mail 1", "Mail 1");
+         smtpClientSimulator.Send("test@example.test", "alias1@example.test", "Mail 2", "Mail 2");
+         smtpClientSimulator.Send("test@example.test", "alias2@example.test", "Mail 3", "Mail 3");
 
-         ImapClientSimulator.AssertMessageCount("test2@test.com", "test", "Inbox", 3);
+         ImapClientSimulator.AssertMessageCount("test2@example.test", "test", "Inbox", 3);
       }
 
       [Test]
@@ -47,23 +42,23 @@ namespace RegressionTests.Infrastructure
       {
          // Create a test account
          // Fetch the default domain
-         Account account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@test.com", "test");
+         var account = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@example.test", "test");
 
-         _settings.MirrorEMailAddress = "mirror-test@test.com";
+         _settings.MirrorEMailAddress = "mirror-test@example.test";
          _settings.AddDeliveredToHeader = true;
 
          // Send 5 messages to this account.
          var smtpClientSimulator = new SmtpClientSimulator();
-         for (int i = 0; i < 5; i++)
-            smtpClientSimulator.Send("test@test.com", "mirror@test.com", "INBOX", "Mirror test message");
+         for (var i = 0; i < 5; i++)
+            smtpClientSimulator.Send("test@example.test", "mirror@example.test", "INBOX", "Mirror test message");
 
          // Check using POP3 that 5 messages exists.
-         Pop3ClientSimulator.AssertMessageCount("mirror-test@test.com", "test", 5);
+         Pop3ClientSimulator.AssertMessageCount("mirror-test@example.test", "test", 5);
 
-         string message = Pop3ClientSimulator.AssertGetFirstMessageText(account2.Address, "test");
+         var message = Pop3ClientSimulator.AssertGetFirstMessageText(account2.Address, "test");
 
-         Assert.IsTrue(message.Contains("Delivered-To: mirror@test.com"));
+         Assert.IsTrue(message.Contains("Delivered-To: mirror@example.test"));
       }
 
       [Test]
@@ -72,26 +67,28 @@ namespace RegressionTests.Infrastructure
       {
          // Create a test account
          // Fetch the default domain
-         Account account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror1@test.com", "test");
-         Account account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror2@test.com", "test");
-         Account account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror3@test.com", "test");
+         var account1 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror1@example.test", "test");
+         var account2 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror2@example.test", "test");
+         var account3 = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror3@example.test", "test");
 
-         Account mirrorAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@test.com",
-                                                                                  "test");
+         var mirrorAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@example.test",
+            "test");
 
-         _settings.MirrorEMailAddress = "mirror-test@test.com";
+         _settings.MirrorEMailAddress = "mirror-test@example.test";
          _settings.AddDeliveredToHeader = true;
 
          // Send 5 messages to this account.
          var smtpClientSimulator = new SmtpClientSimulator();
-         smtpClientSimulator.Send("test@test.com", new List<string> {account1.Address, account2.Address, account3.Address},
-                    "INBOX", "Mirror test message");
+         smtpClientSimulator.Send("test@example.test",
+            new List<string> { account1.Address, account2.Address, account3.Address },
+            "INBOX", "Mirror test message");
 
          Pop3ClientSimulator.AssertMessageCount(mirrorAccount.Address, "test", 1);
 
-         string message = Pop3ClientSimulator.AssertGetFirstMessageText(mirrorAccount.Address, "test");
+         var message = Pop3ClientSimulator.AssertGetFirstMessageText(mirrorAccount.Address, "test");
 
-         Assert.IsTrue(message.Contains("Delivered-To: mirror1@test.com,mirror2@test.com,mirror3@test.com"));
+         Assert.IsTrue(
+            message.Contains("Delivered-To: mirror1@example.test,mirror2@example.test,mirror3@example.test"));
 
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
       }
@@ -103,30 +100,30 @@ namespace RegressionTests.Infrastructure
          // Create a test account
          // Fetch the default domain
          var recipients = new List<string>();
-         for (int i = 0; i < 20; i++)
+         for (var i = 0; i < 20; i++)
          {
-            string address = string.Format("mirror{0}@test.com", i);
+            var address = string.Format("mirror{0}@example.test", i);
             SingletonProvider<TestSetup>.Instance.AddAccount(_domain, address, "test");
             recipients.Add(address);
          }
 
-         Account mirrorAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@test.com",
-                                                                                  "test");
+         var mirrorAccount = SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "mirror-test@example.test",
+            "test");
 
-         _settings.MirrorEMailAddress = "mirror-test@test.com";
+         _settings.MirrorEMailAddress = "mirror-test@example.test";
          _settings.AddDeliveredToHeader = true;
 
          // Send 1 messages to this account.
          var smtpClientSimulator = new SmtpClientSimulator();
-         smtpClientSimulator.Send("test@test.com", recipients, "INBOX", "Mirror test message");
+         smtpClientSimulator.Send("test@example.test", recipients, "INBOX", "Mirror test message");
 
          Pop3ClientSimulator.AssertMessageCount(mirrorAccount.Address, "test", 1);
 
-         string message = Pop3ClientSimulator.AssertGetFirstMessageText(mirrorAccount.Address, "test");
+         var message = Pop3ClientSimulator.AssertGetFirstMessageText(mirrorAccount.Address, "test");
 
          Assert.IsTrue(
             message.Contains(
-               "Delivered-To: mirror0@test.com,mirror1@test.com,mirror2@test.com,mirror3@test.com,mirror4@test.com,mirror5@test.com,mirror6@test.com,mirror7@test.com,mirror8@test.com,mirror9@test.com,mirror10@test.com,mirror11@test.com,mirror12@test.com,mirror13@test.com,mirror14@test\r\n"));
+               "Delivered-To: mirror0@example.test,mirror1@example.test,mirror2@example.test,mirror3@example.test,mirror4@example.test,mirror5@example.test,mirror6@example.test,mirror7@example.test,mirror8@example.test,mirror9@example.test,mirror10@example.test,mirror11@example.test,m\r\n"));
 
          CustomAsserts.AssertRecipientsInDeliveryQueue(0);
       }
@@ -134,16 +131,16 @@ namespace RegressionTests.Infrastructure
       [Test]
       public void DeliveryShouldSucceedAfterClearingDeliveryQueue()
       {
-         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@test.com", "test");
+         SingletonProvider<TestSetup>.Instance.AddAccount(_domain, "test@example.test", "test");
 
          _application.GlobalObjects.DeliveryQueue.Clear();
 
          Assert.IsTrue(LogHandler.DefaultLogContains("Delivery queue cleared."));
 
          var smtpClientSimulator = new SmtpClientSimulator();
-         smtpClientSimulator.Send("test@test.com", "test@test.com", "INBOX", "Mirror test message");
+         smtpClientSimulator.Send("test@example.test", "test@example.test", "INBOX", "Mirror test message");
 
-         Pop3ClientSimulator.AssertMessageCount("test@test.com", "test", 1);
+         Pop3ClientSimulator.AssertMessageCount("test@example.test", "test", 1);
       }
    }
 }
